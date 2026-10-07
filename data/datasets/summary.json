@@ -1,0 +1,99 @@
+{
+  "filtres_globaux": [
+    {
+      "étape": "Peintures au catalogue",
+      "restantes": 32438,
+      "retirées": 0
+    },
+    {
+      "étape": "Image téléchargée",
+      "restantes": 32437,
+      "retirées": 1
+    },
+    {
+      "étape": "Pas une photo d'architecture",
+      "restantes": 32372,
+      "retirées": 65
+    },
+    {
+      "étape": "Pas monochrome",
+      "restantes": 32328,
+      "retirées": 44
+    },
+    {
+      "étape": "Pas un quasi-doublon",
+      "restantes": 26538,
+      "retirées": 5790
+    },
+    {
+      "étape": "Pas de fond de studio",
+      "restantes": 26161,
+      "retirées": 377
+    },
+    {
+      "étape": "Ratio entre 0.5 et 2.0",
+      "restantes": 24860,
+      "retirées": 1301
+    }
+  ],
+  "genres": {
+    "portrait": {
+      "name": "portrait",
+      "types": [
+        "portrait"
+      ],
+      "size": [
+        128,
+        160
+      ],
+      "center_y": 0.4,
+      "max_crop_loss": 0.25,
+      "test_frac": 0.1,
+      "genre_après_filtres": 4376,
+      "format_compatible": 3832,
+      "retirées_format": 544,
+      "train": 3448,
+      "test": 384,
+      "perte_recadrage_médiane": 0.049,
+      "résolutions": [
+        [
+          64,
+          80
+        ],
+        [
+          128,
+          160
+        ]
+      ]
+    },
+    "landscape": {
+      "name": "landscape",
+      "types": [
+        "landscape"
+      ],
+      "size": [
+        128,
+        96
+      ],
+      "center_y": 0.5,
+      "max_crop_loss": 0.25,
+      "test_frac": 0.1,
+      "genre_après_filtres": 3741,
+      "format_compatible": 3016,
+      "retirées_format": 725,
+      "train": 2714,
+      "test": 302,
+      "perte_recadrage_médiane": 0.071,
+      "résolutions": [
+        [
+          64,
+          48
+        ],
+        [
+          128,
+          96
+        ]
+      ]
+    }
+  }
+}

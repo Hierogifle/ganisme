@@ -1,0 +1,11 @@
+# Apparence de l'application : tons de galerie, texte sombre sur fond clair.
+[theme]
+base = "light"
+primaryColor = "#7a4b24"
+backgroundColor = "#fbfaf7"
+secondaryBackgroundColor = "#f1eee7"
+textColor = "#1c1b19"
+font = "serif"
+
+[browser]
+gatherUsageStats = false

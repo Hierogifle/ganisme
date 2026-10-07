@@ -1,0 +1,31 @@
+{
+  "name": "optuna/portrait_64/trial_019",
+  "genre": "portrait",
+  "res": 64,
+  "epochs": 300,
+  "batch_size": 64,
+  "lr_g": 5.4851686541104397e-05,
+  "lr_d": 0.00013488757676890863,
+  "beta1": 0.0,
+  "beta2": 0.999,
+  "nz": 100,
+  "ngf": 64,
+  "ndf": 64,
+  "n_up": 4,
+  "flip": true,
+  "real_label": 1.0,
+  "diffaug": "color,translation",
+  "loss": "bce",
+  "spectral_norm": true,
+  "n_dis": 2,
+  "eval_every": 25,
+  "eval_light": true,
+  "save_checkpoints": false,
+  "register": false,
+  "n_fixed": 64,
+  "seed": 42,
+  "size": [
+    64,
+    80
+  ]
+}

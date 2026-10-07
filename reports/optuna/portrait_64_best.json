@@ -1,0 +1,24 @@
+{
+  "number": 26,
+  "value": 68.00897485978197,
+  "params": {
+    "loss": "bce",
+    "spectral_norm": true,
+    "lr_g": 0.0003041101671322451,
+    "lr_d": 0.0004984335369118899,
+    "beta1": 0.0,
+    "beta2": 0.999,
+    "n_dis": 2,
+    "diffaug": "color,translation",
+    "batch_size": 64
+  },
+  "user_attrs": {
+    "best_fid": 66.45308148848221,
+    "fid_trend": 0.34183784094472003,
+    "last_mem_ratio": 1.1239746809005737,
+    "last_precision": 0.6015080809593201,
+    "last_recall": 0.17894430458545685,
+    "minutes": 17.0,
+    "n_evals": 13
+  }
+}

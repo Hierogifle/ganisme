@@ -1,0 +1,10 @@
+# Dépendances minimales pour lancer l'application (app.py), sans GPU.
+# Prévu aussi pour un hébergement en ligne (ex. Streamlit Community Cloud), NON TESTÉ en ligne à ce jour.
+# Seul PyTorch est épinglé (version de l'entraînement) et pris sur l'index « cpu », bien plus léger.
+# Les autres bornes sont volontairement larges : avec uv, un paquet présent sur l'index PyTorch (numpy, pillow)
+# n'est cherché que là, et une version exacte peut y manquer.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.11.0
+numpy>=2.0
+pillow>=11.0
+streamlit>=1.50
