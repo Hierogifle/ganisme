@@ -1,29 +1,28 @@
-"""Construction des jeux d'entraînement du GAN, un par genre.
+"""Build the GAN training sets, one per genre.
 
-Pipeline (chaque étape est justifiée dans notebooks/01 et 02) :
+Pipeline (each step is justified in notebooks 01 and 02):
 
-1. **Filtres globaux** — on retire ce qui n'est pas une peinture exploitable :
-   images non téléchargées, photos d'architecture (technique « Photo »), images monochromes
-   (sculptures, gravures, photos N&B d'œuvres détruites), quasi-doublons (détails, vues multiples),
-   panneaux détourés sur fond de studio, formats extrêmes (prédelles, volets).
-2. **Sélection du genre** — on garde les images du genre dont le format est proche du format cible
-   du genre (portrait 4:5 vertical, paysage 4:3 horizontal), pour que le recadrage coupe peu.
-3. **Recadrage + redimensionnement** — recadrage au ratio cible (perte ≤ 25 % de la surface),
-   puis redimensionnement Lanczos (anti-aliasing) à la résolution maximale prévue.
-4. **Séparation train / test par œuvre** — 10 % des œuvres sont mises de côté : jamais vues à
-   l'entraînement, elles servent à mesurer le « plancher » des métriques et à détecter la mémorisation.
-   La séparation se fait par groupe (même auteur + même titre de base) pour qu'une même œuvre ne se
-   retrouve pas des deux côtés.
+1. **Global filters** — remove whatever is not a usable painting: images that were not downloaded,
+   architecture photos ("Photo" technique), monochrome images (sculptures, engravings, black-and-white
+   photos of destroyed artworks), near-duplicates (details, multiple views), panels cut out on a studio
+   background, extreme formats (predellas, wings).
+2. **Genre selection** — keep the images of the genre whose format is close to the target format of
+   the genre (4:5 vertical portrait, 4:3 horizontal landscape), so that cropping removes little.
+3. **Crop + resize** — crop to the target aspect ratio (at most 25 % of the area lost), then Lanczos
+   resize (anti-aliasing) to the highest planned resolution.
+4. **Train / test split by artwork** — 10 % of the artworks are set aside: never seen during
+   training, they are used to measure the "floor" of the metrics and to detect memorisation. The split
+   is done by group (same author + same base title) so that one artwork never ends up on both sides.
 
-Sorties, pour chaque genre :
-    data/datasets/<genre>/images/<id>.png   images recadrées à la résolution maximale
-    data/datasets/<genre>/metadata.csv      une ligne par image (origine, split, recadrage…)
-    data/datasets/summary.json              entonnoir des filtres et effectifs
+Outputs, for each genre:
+    data/datasets/<genre>/images/<id>.png   images cropped at the highest resolution
+    data/datasets/<genre>/metadata.csv      one row per image (source, split, crop loss…)
+    data/datasets/summary.json              filter funnel and dataset sizes
 
-Usage :
-    python src/dataset.py                      # tous les genres configurés
-    python src/dataset.py --genres portrait    # un seul genre
-    python src/dataset.py --force              # reconstruit même si le dossier existe
+Usage:
+    python src/dataset.py                      # every configured genre
+    python src/dataset.py --genres portrait    # a single genre
+    python src/dataset.py --force              # rebuild even if the folder exists
 """
 from __future__ import annotations
 
@@ -44,26 +43,26 @@ IMAGE_STATS = ROOT / "data" / "processed" / "image_stats.csv"
 DATASETS = ROOT / "data" / "datasets"
 SEED = 42
 
-# Seuils des filtres globaux (valeurs choisies et validées visuellement dans le notebook 02)
-MONOCHROME_MAX = 0.02      # écart entre canaux RGB / luminosité : en dessous, image monochrome
-CORNER_STD_MAX = 0.03      # coins de variabilité faible…
-CORNER_LUM_MIN = 0.55      # …et clairs : fond de studio autour d'un tondo / panneau détouré
-ASPECT_RANGE = (0.5, 2.0)  # hors de cet intervalle : prédelles, volets, frises
+# Thresholds of the global filters (values chosen and checked visually in notebook 02)
+MONOCHROME_MAX = 0.02      # gap between RGB channels / brightness: below this, the image is monochrome
+CORNER_STD_MAX = 0.03      # corners with little variation…
+CORNER_LUM_MIN = 0.55      # …and bright: studio background around a tondo / a cut-out panel
+ASPECT_RANGE = (0.5, 2.0)  # outside this range: predellas, wings, friezes
 
 
 @dataclass(frozen=True)
 class GenreConfig:
-    """Paramètres d'un jeu de données de genre.
+    """Parameters of one genre dataset.
 
-    `size` est la résolution MAXIMALE stockée (largeur, hauteur). Les résolutions d'entraînement
-    plus basses (ex. 64×80) sont obtenues en divisant par 2 : elles gardent le même ratio, ce qui
-    permet un entraînement progressif 64 → 128 sans refaire le dataset.
+    `size` is the HIGHEST stored resolution (width, height). Lower training resolutions (e.g. 64×80)
+    are obtained by dividing by 2: they keep the same aspect ratio, which allows progressive training
+    64 → 128 without rebuilding the dataset.
     """
     name: str
-    types: tuple[str, ...]        # valeurs de la colonne TYPE du catalogue
-    size: tuple[int, int]         # (largeur, hauteur) en pixels
-    center_y: float = 0.5         # position verticale du recadrage (0 = haut, 1 = bas)
-    max_crop_loss: float = 0.25   # part maximale de la surface perdue au recadrage
+    types: tuple[str, ...]        # values of the TYPE column of the catalogue
+    size: tuple[int, int]         # (width, height) in pixels
+    center_y: float = 0.5         # vertical position of the crop (0 = top, 1 = bottom)
+    max_crop_loss: float = 0.25   # largest share of the area that may be lost by cropping
     test_frac: float = 0.10
 
     @property
@@ -76,17 +75,17 @@ class GenreConfig:
 
 
 GENRES = {
-    # Portraits : 90 % sont verticaux, ratio médian ≈ 0,8 → format 4:5.
-    # Recadrage légèrement remonté (0,4) : l'image moyenne montre le visage dans le tiers supérieur.
+    # Portraits: 90 % are vertical, median aspect ratio ≈ 0.8 → 4:5 format.
+    # Crop shifted slightly upwards (0.4): the mean image shows the face in the upper third.
     "portrait": GenreConfig("portrait", ("portrait",), size=(128, 160), center_y=0.4),
-    # Paysages : 83 % sont horizontaux, ratio médian ≈ 1,33 → format 4:3.
+    # Landscapes: 83 % are horizontal, median aspect ratio ≈ 1.33 → 4:3 format.
     "landscape": GenreConfig("landscape", ("landscape",), size=(128, 96)),
 }
 
 
-# --------------------------------------------------------------------------- chargement
+# --------------------------------------------------------------------------- loading
 def load_images_table() -> pd.DataFrame:
-    """Catalogue enrichi + résultat du scraping + statistiques visuelles, une ligne par peinture."""
+    """Enriched catalogue + scraping result + visual statistics, one row per painting."""
     cat = pd.read_csv(CATALOG)
     man = pd.read_csv(MANIFEST).drop_duplicates("url", keep="last")
     df = cat.merge(man[["url", "status", "local_path", "width", "height", "mode"]],
@@ -101,7 +100,7 @@ def load_images_table() -> pd.DataFrame:
 
 
 def compute_image_stats(df: pd.DataFrame, res: int = 64) -> pd.DataFrame:
-    """Statistiques visuelles nécessaires aux filtres (même calcul que le notebook 02)."""
+    """Visual statistics needed by the filters (same computation as notebook 02)."""
     luma = np.array([0.299, 0.587, 0.114], dtype=np.float32)
 
     def feats(row):
@@ -118,52 +117,52 @@ def compute_image_stats(df: pd.DataFrame, res: int = 64) -> pd.DataFrame:
         return pd.DataFrame(pool.map(feats, df.to_dict("records")))
 
 
-# --------------------------------------------------------------------------- filtres
+# --------------------------------------------------------------------------- filters
 def global_filters(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Applique les filtres globaux dans l'ordre et renvoie (images gardées, entonnoir).
+    """Apply the global filters in order and return (kept images, funnel).
 
-    L'entonnoir (funnel) indique combien d'images chaque filtre retire : c'est le tableau à montrer
-    pour justifier la taille finale du dataset.
+    The funnel tells how many images each filter removes: it is the table to show when justifying
+    the final size of the dataset.
     """
     chroma_rel = df["CHROMA_SPREAD"] / df["BRIGHTNESS"].clip(lower=0.05)
     steps = [
-        ("Peintures au catalogue", pd.Series(True, index=df.index)),
-        ("Image téléchargée", df["status"].eq("ok")),
-        ("Pas une photo d'architecture", ~df["MEDIUM"].str.lower().eq("photo")),
-        ("Pas monochrome", chroma_rel >= MONOCHROME_MAX),
-        ("Pas un quasi-doublon", ~df["IS_NEAR_DUP"].astype(bool)),
-        ("Pas de fond de studio", ~((df["CORNER_STD"] < CORNER_STD_MAX) & (df["CORNER_LUM"] > CORNER_LUM_MIN))),
-        (f"Ratio entre {ASPECT_RANGE[0]} et {ASPECT_RANGE[1]}", df["IMG_ASPECT"].between(*ASPECT_RANGE)),
+        ("Paintings in the catalogue", pd.Series(True, index=df.index)),
+        ("Image downloaded", df["status"].eq("ok")),
+        ("Not an architecture photo", ~df["MEDIUM"].str.lower().eq("photo")),
+        ("Not monochrome", chroma_rel >= MONOCHROME_MAX),
+        ("Not a near-duplicate", ~df["IS_NEAR_DUP"].astype(bool)),
+        ("No studio background", ~((df["CORNER_STD"] < CORNER_STD_MAX) & (df["CORNER_LUM"] > CORNER_LUM_MIN))),
+        (f"Aspect ratio between {ASPECT_RANGE[0]} and {ASPECT_RANGE[1]}", df["IMG_ASPECT"].between(*ASPECT_RANGE)),
     ]
     keep = pd.Series(True, index=df.index)
     funnel = []
     for label, mask in steps:
         before = int(keep.sum())
         keep &= mask.fillna(False)
-        funnel.append({"étape": label, "restantes": int(keep.sum()), "retirées": before - int(keep.sum())})
-    funnel[0]["retirées"] = 0
+        funnel.append({"step": label, "remaining": int(keep.sum()), "removed": before - int(keep.sum())})
+    funnel[0]["removed"] = 0
     return df[keep].copy(), pd.DataFrame(funnel)
 
 
 def crop_loss(aspect: pd.Series | float, target: float):
-    """Part de la surface perdue quand on recadre une image de ratio `aspect` au ratio `target`."""
+    """Share of the area lost when an image of aspect ratio `aspect` is cropped to `target`."""
     return 1 - np.minimum(aspect / target, target / aspect)
 
 
 def select_genre(df: pd.DataFrame, cfg: GenreConfig) -> tuple[pd.DataFrame, dict]:
-    """Garde les images du genre dont le recadrage au format cible coupe au plus `max_crop_loss`."""
+    """Keep the images of the genre for which cropping to the target format removes at most `max_crop_loss`."""
     g = df[df["TYPE"].isin(cfg.types)].copy()
     g["CROP_LOSS"] = crop_loss(g["IMG_ASPECT"], cfg.aspect)
     kept = g[g["CROP_LOSS"] <= cfg.max_crop_loss].copy()
-    info = {"genre_après_filtres": len(g), "format_compatible": len(kept), "retirées_format": len(g) - len(kept)}
+    info = {"genre_after_filters": len(g), "compatible_format": len(kept), "removed_by_format": len(g) - len(kept)}
     return kept, info
 
 
 def split_by_artwork(df: pd.DataFrame, test_frac: float, seed: int = SEED) -> pd.Series:
-    """Tirage train/test au niveau de l'œuvre (auteur + titre de base) pour éviter les fuites.
+    """Train/test draw at the artwork level (author + base title) to avoid leakage.
 
-    Si deux lignes décrivent la même œuvre (ex. deux versions d'un même portrait), elles tombent
-    toujours du même côté : sinon le « test » contiendrait des images déjà vues à l'entraînement.
+    If two rows describe the same artwork (e.g. two versions of one portrait), they always fall on the
+    same side: otherwise the "test" set would contain images already seen during training.
     """
     groups = df["AUTHOR"] + " | " + df["TITLE_BASE"].fillna(df["TITLE"])
     uniq = groups.drop_duplicates().sample(frac=1, random_state=seed).tolist()
@@ -179,24 +178,24 @@ def split_by_artwork(df: pd.DataFrame, test_frac: float, seed: int = SEED) -> pd
 
 # --------------------------------------------------------------------------- export
 def image_id(url: str) -> str:
-    """Identifiant stable et lisible, dérivé de l'URL : '…/html/a/aachen/adonis.html' -> 'a__aachen__adonis'."""
+    """Stable, readable identifier derived from the URL: '…/html/a/aachen/adonis.html' -> 'a__aachen__adonis'."""
     return url.split("/html/", 1)[1].rsplit(".", 1)[0].replace("/", "__")
 
 
 def crop_and_resize(src: Path, size: tuple[int, int], center_y: float) -> Image.Image:
-    """Recadre au ratio de `size` (en gardant la plus grande zone possible) puis redimensionne.
+    """Crop to the aspect ratio of `size` (keeping the largest possible area), then resize.
 
-    `ImageOps.fit` découpe la plus grande fenêtre au bon ratio, positionnée selon `centering`
-    (0,5 horizontalement ; `center_y` verticalement), puis redimensionne. Lanczos est un filtre
-    anti-aliasing : sans lui, la réduction ferait apparaître du crénelage et du moiré que le GAN
-    apprendrait à reproduire.
+    `ImageOps.fit` cuts out the largest window with the right aspect ratio, positioned according to
+    `centering` (0.5 horizontally; `center_y` vertically), then resizes. Lanczos is an anti-aliasing
+    filter: without it, downscaling would produce jagged edges and moiré that the GAN would learn to
+    reproduce.
     """
     with Image.open(src) as im:
         return ImageOps.fit(im.convert("RGB"), size, Image.LANCZOS, centering=(0.5, center_y))
 
 
 def build_genre(df_filtered: pd.DataFrame, cfg: GenreConfig, force: bool = False) -> dict:
-    """Construit data/datasets/<genre>/ et renvoie un résumé chiffré."""
+    """Build data/datasets/<genre>/ and return a summary in numbers."""
     out = DATASETS / cfg.name
     img_dir = out / "images"
     kept, info = select_genre(df_filtered, cfg)
@@ -206,7 +205,7 @@ def build_genre(df_filtered: pd.DataFrame, cfg: GenreConfig, force: bool = False
 
     if force or not (out / "metadata.csv").exists():
         img_dir.mkdir(parents=True, exist_ok=True)
-        for old in img_dir.glob("*.png"):       # repart d'un dossier propre
+        for old in img_dir.glob("*.png"):       # start again from a clean folder
             old.unlink()
 
         def export(row):
@@ -221,16 +220,16 @@ def build_genre(df_filtered: pd.DataFrame, cfg: GenreConfig, force: bool = False
 
     counts = kept["SPLIT"].value_counts()
     return {**asdict(cfg), **info, "train": int(counts.get("train", 0)), "test": int(counts.get("test", 0)),
-            "perte_recadrage_médiane": round(float(kept["CROP_LOSS"].median()), 3),
-            "résolutions": cfg.resolutions()}
+            "median_crop_loss": round(float(kept["CROP_LOSS"].median()), 3),
+            "resolutions": cfg.resolutions()}
 
 
 def load_split(genre: str, split: str | None = "train", size: tuple[int, int] | None = None) -> np.ndarray:
-    """Charge les images d'un genre en mémoire : tableau uint8 (N, H, W, 3).
+    """Load the images of a genre into memory: uint8 array (N, H, W, 3).
 
-    `size` permet de charger une résolution plus basse (ex. (64, 80)) : la réduction utilise le même
-    filtre Lanczos que le dataset, de sorte que les images réelles et générées sont comparées à la même
-    résolution et avec le même traitement.
+    `size` loads a lower resolution (e.g. (64, 80)): downscaling uses the same Lanczos filter as the
+    dataset, so that real and generated images are compared at the same resolution and with the same
+    processing.
     """
     meta = pd.read_csv(DATASETS / genre / "metadata.csv")
     if split is not None:
@@ -253,7 +252,7 @@ def main() -> None:
 
     filtered, funnel = global_filters(load_images_table())
     print(funnel.to_string(index=False))
-    summary = {"filtres_globaux": funnel.to_dict("records"), "genres": {}}
+    summary = {"global_filters": funnel.to_dict("records"), "genres": {}}
     for g in args.genres:
         summary["genres"][g] = build_genre(filtered, GENRES[g], force=args.force)
         print(g, summary["genres"][g])

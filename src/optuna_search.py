@@ -1,28 +1,29 @@
-"""Recherche d'hyperparamètres avec Optuna.
+"""Hyperparameter search with Optuna.
 
-Chaque essai (« trial ») entraîne un GAN complet avec une combinaison d'hyperparamètres proposée par
-Optuna, puis renvoie un score à minimiser. Optuna utilise l'algorithme **TPE** (Tree-structured Parzen
-Estimator) : il modélise, à partir des essais passés, les zones de l'espace de recherche qui donnent de
-bons et de mauvais scores, et propose les essais suivants là où le ratio « bon / mauvais » est le plus
-élevé. C'est bien plus efficace qu'une grille ou qu'un tirage aléatoire quand chaque essai coûte cher.
+Each trial trains a full GAN with a combination of hyperparameters proposed by Optuna, then returns
+a score to minimise. Optuna uses the **TPE** algorithm (Tree-structured Parzen Estimator): from past
+trials, it models which regions of the search space give good and bad scores, and proposes the next
+trials where the "good / bad" ratio is highest. This is far more efficient than a grid or a random
+search when each trial is expensive.
 
-Choix spécifiques aux GAN (discutés dans le notebook 06 et le notebook d'analyse de l'étude) :
+Choices specific to GANs (discussed in notebook 06 and in the notebook analysing the study):
 
-1. **Objectif robuste aux effondrements** : moyenne du FID des 3 dernières évaluations, et non le meilleur
-   FID. Un réglage qui atteint un bon score puis s'effondre (comme le modèle n°2) est pénalisé ; un
-   réglage stable est favorisé.
-2. **Élagage prudent** : Optuna arrête un essai seulement s'il fait partie du **quart le moins bon** à la
-   même époque, et jamais avant l'époque 125 — pour ne pas éliminer à tort des réglages qui convergent
-   lentement (comme la normalisation spectrale).
-3. **Même graine pour tous les essais** : les écarts viennent des hyperparamètres, pas de l'initialisation.
-4. **Évaluation allégée** (FID, précision/rappel, mémorisation) toutes les 25 époques.
-5. **Premiers essais imposés** : les réglages des modèles n°2 et n°3, ainsi que deux réglages connus de la
-   littérature, servent de points de repère à l'algorithme.
+1. **Objective robust to collapses**: mean FID of the last 3 evaluations, not the best FID. A setting
+   that reaches a good score and then collapses (like model 2) is penalised; a stable setting is
+   favoured.
+2. **Cautious pruning**: Optuna stops a trial only if it is in the **worst quarter** at the same
+   epoch, and never before epoch 125 — so that settings which converge slowly (such as spectral
+   normalisation) are not wrongly eliminated.
+3. **Same seed for every trial**: differences come from the hyperparameters, not from the
+   initialisation.
+4. **Light evaluation** (FID, precision/recall, memorisation) every 25 epochs.
+5. **First trials imposed**: the settings of models 2 and 3, plus two settings known from the
+   literature, serve as landmarks for the algorithm.
 
-L'étude est stockée dans une base SQLite : si l'ordinateur s'arrête, relancer la même commande reprend
-l'étude là où elle en était.
+The study is stored in an SQLite database: if the computer stops, running the same command again
+resumes the study where it left off.
 
-Exemple :
+Example:
     python src/optuna_search.py --n-trials 30 --timeout-hours 8
 """
 from __future__ import annotations
@@ -46,36 +47,36 @@ OUT = ROOT / "reports" / "optuna"
 
 DIFFAUG_POLICIES = ["", "translation,cutout", "color,translation", "color,translation,cutout"]
 
-# Réglages de référence évalués en premier (points de repère pour TPE)
+# Reference settings evaluated first (landmarks for TPE)
 ENQUEUED = [
-    # Modèle n°2 : DCGAN + DiffAugment, hyperparamètres de l'article DCGAN
+    # Model 2: DCGAN + DiffAugment, hyperparameters of the DCGAN paper
     {"loss": "bce", "spectral_norm": False, "lr_g": 2e-4, "lr_d": 2e-4, "beta1": 0.5, "beta2": 0.999,
      "n_dis": 1, "diffaug": "color,translation,cutout", "batch_size": 128},
-    # Modèle n°3 : SNGAN + DiffAugment avec les mêmes hyperparamètres (discriminateur trop faible)
+    # Model 3: SNGAN + DiffAugment with the same hyperparameters (discriminator too weak)
     {"loss": "hinge", "spectral_norm": True, "lr_g": 2e-4, "lr_d": 2e-4, "beta1": 0.5, "beta2": 0.999,
      "n_dis": 1, "diffaug": "color,translation,cutout", "batch_size": 128},
-    # SNGAN + TTUR (Heusel et al., 2017) : D apprend 4× plus vite que G, Adam(0 ; 0,9)
+    # SNGAN + TTUR (Heusel et al., 2017): D learns 4× faster than G, Adam(0, 0.9)
     {"loss": "hinge", "spectral_norm": True, "lr_g": 1e-4, "lr_d": 4e-4, "beta1": 0.0, "beta2": 0.9,
      "n_dis": 1, "diffaug": "color,translation,cutout", "batch_size": 128},
-    # SNGAN « à la Miyato » : plusieurs mises à jour de D par mise à jour de G, Adam(0 ; 0,9)
+    # SNGAN "à la Miyato": several D updates per G update, Adam(0, 0.9)
     {"loss": "hinge", "spectral_norm": True, "lr_g": 2e-4, "lr_d": 2e-4, "beta1": 0.0, "beta2": 0.9,
      "n_dis": 3, "diffaug": "color,translation,cutout", "batch_size": 64},
 ]
 
 
 def suggest(trial: optuna.Trial) -> dict:
-    """L'espace de recherche : les leviers qui règlent l'équilibre entre G et D."""
+    """The search space: the levers that set the balance between G and D."""
     return {
-        # Perte et normalisation spectrale : choisies indépendamment (4 combinaisons)
+        # Loss and spectral normalisation: chosen independently (4 combinations)
         "loss": trial.suggest_categorical("loss", ["bce", "hinge"]),
         "spectral_norm": trial.suggest_categorical("spectral_norm", [False, True]),
-        # Taux d'apprentissage séparés (échelle log) : leur rapport règle la « vitesse » relative de D et G
+        # Separate learning rates (log scale): their ratio sets the relative "speed" of D and G
         "lr_g": trial.suggest_float("lr_g", 5e-5, 5e-4, log=True),
         "lr_d": trial.suggest_float("lr_d", 5e-5, 1e-3, log=True),
-        # Adam : β1 = 0,5 (DCGAN) ou 0 (SNGAN, BigGAN) ; β2 = 0,999 (défaut) ou 0,9 (SNGAN)
+        # Adam: beta1 = 0.5 (DCGAN) or 0 (SNGAN, BigGAN); beta2 = 0.999 (default) or 0.9 (SNGAN)
         "beta1": trial.suggest_categorical("beta1", [0.0, 0.5]),
         "beta2": trial.suggest_categorical("beta2", [0.9, 0.999]),
-        # Mises à jour de D par mise à jour de G (5 dans l'article SNGAN, trop coûteux ici)
+        # D updates per G update (5 in the SNGAN paper, too expensive here)
         "n_dis": trial.suggest_categorical("n_dis", [1, 2, 3]),
         "diffaug": trial.suggest_categorical("diffaug", DIFFAUG_POLICIES),
         "batch_size": trial.suggest_categorical("batch_size", [64, 128]),
@@ -95,16 +96,16 @@ def make_objective(args):
             trial.set_user_attr("last_precision", scores["precision"])
             trial.set_user_attr("last_recall", scores["recall"])
             trial.set_user_attr("last_mem_ratio", scores["mem_ratio"])
-            # Optuna décide, à chaque évaluation, s'il faut arrêter cet essai
+            # At each evaluation, Optuna decides whether this trial should be stopped
             trial.report(scores["FID"], step=epoch)
             if trial.should_prune():
-                raise optuna.TrialPruned(f"élagué à l'époque {epoch} (FID {scores['FID']:.1f})")
+                raise optuna.TrialPruned(f"pruned at epoch {epoch} (FID {scores['FID']:.1f})")
 
         t0 = time.time()
         try:
-            with contextlib.redirect_stdout(io.StringIO()):      # journal par essai dans runs/optuna/…
+            with contextlib.redirect_stdout(io.StringIO()):      # per-trial log kept in runs/optuna/…
                 tr.train(cfg, on_eval=on_eval)
-        except FloatingPointError as exc:                      # divergence numérique : très mauvais score
+        except FloatingPointError as exc:                      # numerical divergence: very bad score
             trial.set_user_attr("error", str(exc))
             return 999.0
         finally:
@@ -113,7 +114,7 @@ def make_objective(args):
             trial.set_user_attr("n_evals", len(fids))
             torch.cuda.empty_cache()
 
-        # Objectif : moyenne des 3 dernières évaluations (pénalise les effondrements de fin d'entraînement)
+        # Objective: mean of the last 3 evaluations (penalises collapses at the end of training)
         tail = fids[-3:]
         trial.set_user_attr("fid_trend", float(fids[-1] - fids[-3]) if len(fids) >= 3 else None)
         return float(np.mean(tail))
@@ -122,7 +123,7 @@ def make_objective(args):
 
 
 def export(study: optuna.Study) -> None:
-    """Exporte les essais en CSV et le meilleur réglage en JSON (lus par le notebook d'analyse)."""
+    """Export the trials to CSV and the best setting to JSON (read by the analysis notebook)."""
     df = study.trials_dataframe(attrs=("number", "value", "state", "params", "user_attrs", "duration"))
     df.to_csv(OUT / f"{study.study_name}_trials.csv", index=False)
     done = [t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE]
@@ -148,7 +149,7 @@ def main() -> None:
         study_name=args.study, storage=f"sqlite:///{(OUT / f'{args.study}.db').as_posix()}", load_if_exists=True,
         direction="minimize",
         sampler=optuna.samplers.TPESampler(seed=42, multivariate=True, n_startup_trials=8),
-        # Élague si l'essai est dans le quart le moins bon (75e centile) à la même époque, après l'époque 125
+        # Prune if the trial is in the worst quarter (75th percentile) at the same epoch, after epoch 125
         pruner=optuna.pruners.PercentilePruner(75.0, n_startup_trials=5, n_warmup_steps=125),
     )
     if len(study.trials) == 0:
@@ -158,18 +159,18 @@ def main() -> None:
     def log(study, trial):
         export(study)
         v = f"{trial.value:.1f}" if trial.value is not None else "-"
-        best = f"{study.best_value:.1f} (essai {study.best_trial.number})" if any(
+        best = f"{study.best_value:.1f} (trial {study.best_trial.number})" if any(
             t.state == optuna.trial.TrialState.COMPLETE for t in study.trials) else "-"
-        print(f"essai {trial.number:3d} | {trial.state.name:8s} | objectif {v:>6s} | "
-              f"{trial.user_attrs.get('minutes', '?')} min | meilleur {best} | {trial.params}", flush=True)
+        print(f"trial {trial.number:3d} | {trial.state.name:8s} | objective {v:>6s} | "
+              f"{trial.user_attrs.get('minutes', '?')} min | best {best} | {trial.params}", flush=True)
 
     already = len([t for t in study.trials if t.state.is_finished()])
     remaining = max(0, args.n_trials - already)
-    print(f"Étude « {args.study} » : {already} essais terminés, {remaining} à lancer "
-          f"({args.epochs} époques par essai, limite {args.timeout_hours} h)", flush=True)
+    print(f"Study '{args.study}': {already} trials finished, {remaining} to run "
+          f"({args.epochs} epochs per trial, limit {args.timeout_hours} h)", flush=True)
     study.optimize(make_objective(args), n_trials=remaining, timeout=args.timeout_hours * 3600, callbacks=[log])
     export(study)
-    print("Terminé. Meilleur essai :", study.best_trial.number, study.best_value, study.best_params, flush=True)
+    print("Done. Best trial:", study.best_trial.number, study.best_value, study.best_params, flush=True)
 
 
 if __name__ == "__main__":

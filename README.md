@@ -8,8 +8,9 @@ starts from random noise only.
 
 *Uncurated samples (fixed seed 2024) from the two 128-pixel models: portraits (128×160) and landscapes (128×96).*
 
-School project (La Plateforme_, M2), carried out alone. The notebooks and code comments are written in **French**;
-this README is the English entry point.
+School project (La Plateforme_, M2), carried out alone. The code is written in **English** (identifiers,
+comments, docstrings, log messages); the explanations in the notebooks, the figure labels and the interface of the
+application are in **French**. This README is the English entry point.
 
 ## Context
 
@@ -99,13 +100,13 @@ The application has only been run locally so far; it is not deployed online.
 | `app.py` | Streamlit application |
 | `models/` | the four exported generators (`.pt`) and their description (`models.json`) |
 | `notebooks/01_eda_art_catalog.ipynb` | exploratory analysis of the catalogue |
-| `notebooks/02_visualisation_images.ipynb` | looking at the images, consequences for preprocessing |
-| `notebooks/03_dataset_et_metriques.ipynb` | training sets, metrics, reference scale |
+| `notebooks/02_image_visualization.ipynb` | looking at the images, consequences for preprocessing |
+| `notebooks/03_datasets_and_metrics.ipynb` | training sets, metrics, reference scale |
 | `notebooks/04` to `06` | the three first models (DCGAN, + DiffAugment, + spectral normalisation) |
 | `notebooks/07_optuna_portraits_64.ipynb` | hyperparameter study |
-| `notebooks/08_confirmation_modele_final_portraits_64.ipynb` | confirmation on three seeds, final 64×80 model |
+| `notebooks/08_confirmation_final_model_portraits_64.ipynb` | confirmation on three seeds, final 64×80 model |
 | `notebooks/09_portraits_128.ipynb` | moving to 128×160 |
-| `notebooks/10_paysages.ipynb` | second genre: landscapes |
+| `notebooks/10_landscapes.ipynb` | second genre: landscapes |
 | `src/scrape_images.py` | resumable image download |
 | `src/dataset.py` | filters, cropping, train/test split |
 | `src/metrics.py` | evaluation metrics |

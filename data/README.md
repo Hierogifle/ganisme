@@ -17,7 +17,7 @@ The data is **not redistributed** in this repository: the images belong to the
 2. Run `notebooks/01_eda_art_catalog.ipynb` → `data/processed/paintings_catalog.csv`.
 3. Download the images (about 50 minutes, 650 MB, resumable):
    `python src/scrape_images.py` → `data/raw/images/`.
-4. Run `notebooks/02_visualisation_images.ipynb` → `data/processed/image_stats.csv`.
+4. Run `notebooks/02_image_visualization.ipynb` → `data/processed/image_stats.csv`.
 5. Build the training sets: `python src/dataset.py` → `data/datasets/<genre>/images/`.
 
 Expected layout once rebuilt:

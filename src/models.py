@@ -1,21 +1,21 @@
-"""Architectures des GAN du projet.
+"""GAN architectures of the project.
 
-DCGAN — Radford, Metz & Chintala (2015), « Unsupervised Representation Learning with Deep
-Convolutional Generative Adversarial Networks ». On reprend les règles de stabilisation de l'article :
+DCGAN — Radford, Metz & Chintala (2015), "Unsupervised Representation Learning with Deep
+Convolutional Generative Adversarial Networks". The stabilisation rules of the paper are followed:
 
-  1. pas de pooling : le sous/sur-échantillonnage est appris par des convolutions à stride 2 ;
-  2. BatchNorm dans les deux réseaux, sauf en sortie du générateur et en entrée du discriminateur ;
-  3. pas de couche dense cachée : réseaux entièrement convolutifs ;
-  4. générateur : ReLU partout, Tanh en sortie (images dans [-1, 1]) ;
-  5. discriminateur : LeakyReLU(0,2) partout ;
-  6. poids initialisés selon N(0 ; 0,02).
+  1. no pooling: down/up-sampling is learned by stride-2 convolutions;
+  2. BatchNorm in both networks, except at the generator output and the discriminator input;
+  3. no hidden dense layer: fully convolutional networks;
+  4. generator: ReLU everywhere, Tanh at the output (images in [-1, 1]);
+  5. discriminator: LeakyReLU(0.2) everywhere;
+  6. weights initialised from N(0, 0.02).
 
-Seule adaptation : les images ne sont pas carrées. Le générateur part d'une grille `base` = (hauteur,
-largeur) au lieu de 4×4, puis chaque couche double la taille : pour les portraits, base (5, 4) et
-4 doublements donnent 80×64 (hauteur × largeur), soit une image 64×80 au ratio 4:5.
+Only adaptation: the images are not square. The generator starts from a `base` grid = (height,
+width) instead of 4×4, then each layer doubles the size: for portraits, base (5, 4) and 4 doublings
+give 80×64 (height × width), i.e. a 64×80 image with a 4:5 aspect ratio.
 
         z (100)                                       image 3×80×64
-          │  ConvT noyau 5×4                               │  Conv 4×4 /2
+          │  ConvT kernel 5×4                              │  Conv 4×4 /2
      512 × 5 × 4                                      64 × 40 × 32
           │  ConvT 4×4 ×2                                  │  Conv 4×4 /2
      256 × 10 × 8                                    128 × 20 × 16
@@ -23,9 +23,9 @@ largeur) au lieu de 4×4, puis chaque couche double la taille : pour les portrai
      128 × 20 × 16                                   256 × 10 × 8
           │                                                │
       64 × 40 × 32                                   512 × 5 × 4
-          │  ConvT 4×4 ×2 + Tanh                           │  Conv noyau 5×4
-      3 × 80 × 64                                     1 logit (réel / faux)
-        GÉNÉRATEUR                                      DISCRIMINATEUR
+          │  ConvT 4×4 ×2 + Tanh                           │  Conv kernel 5×4
+      3 × 80 × 64                                     1 logit (real / fake)
+         GENERATOR                                      DISCRIMINATOR
 """
 from __future__ import annotations
 
@@ -34,26 +34,26 @@ from torch import nn
 
 
 class Generator(nn.Module):
-    """Vecteur latent z (nz) -> image (3, base_h·2^n_up, base_w·2^n_up) dans [-1, 1]."""
+    """Latent vector z (nz) -> image (3, base_h·2^n_up, base_w·2^n_up) in [-1, 1]."""
 
     def __init__(self, nz: int = 100, ngf: int = 64, base: tuple[int, int] = (5, 4), n_up: int = 4, nc: int = 3):
         super().__init__()
         self.nz = nz
-        c = ngf * 2 ** (n_up - 1)                       # 512 canaux sur la grille de départ
+        c = ngf * 2 ** (n_up - 1)                       # 512 channels on the starting grid
         layers = [
-            # z est vu comme une « image » 1×1 à nz canaux ; une convolution transposée de noyau
-            # égal à la grille de départ la projette en un tenseur c × base_h × base_w.
+            # z is seen as a 1×1 "image" with nz channels; a transposed convolution whose kernel equals
+            # the starting grid projects it to a c × base_h × base_w tensor.
             nn.ConvTranspose2d(nz, c, kernel_size=base, stride=1, padding=0, bias=False),
             nn.BatchNorm2d(c),
             nn.ReLU(True),
         ]
         for _ in range(n_up - 1):
-            # Chaque bloc double la hauteur et la largeur (noyau 4, stride 2, padding 1) et divise
-            # le nombre de canaux par deux : on échange de la « profondeur » contre de la résolution.
+            # Each block doubles the height and the width (kernel 4, stride 2, padding 1) and halves
+            # the number of channels: "depth" is traded for resolution.
             layers += [nn.ConvTranspose2d(c, c // 2, 4, 2, 1, bias=False), nn.BatchNorm2d(c // 2), nn.ReLU(True)]
             c //= 2
-        # Dernière couche : 3 canaux RGB, pas de BatchNorm, Tanh pour produire des valeurs dans [-1, 1]
-        # (même échelle que les images réelles normalisées).
+        # Last layer: 3 RGB channels, no BatchNorm, Tanh to produce values in [-1, 1]
+        # (same range as the normalised real images).
         layers += [nn.ConvTranspose2d(c, nc, 4, 2, 1, bias=False), nn.Tanh()]
         self.net = nn.Sequential(*layers)
 
@@ -62,17 +62,16 @@ class Generator(nn.Module):
 
 
 class Discriminator(nn.Module):
-    """Image -> un logit (score réel/faux avant sigmoïde). Architecture miroir du générateur.
+    """Image -> one logit (real/fake score before the sigmoid). Mirror architecture of the generator.
 
-    `spectral=True` : variante SNGAN (Miyato et al., 2018). Chaque convolution est enveloppée d'une
-    **normalisation spectrale** : ses poids sont divisés à chaque passage par leur plus grande valeur
-    singulière (estimée par une itération de la méthode de la puissance). Chaque couche devient alors
-    1-lipschitzienne : une petite variation de l'image ne peut produire qu'une petite variation du score.
-    Le discriminateur ne peut plus réagir brutalement aux changements du générateur — c'est ce qui
-    vise les crises et effondrements observés avec le modèle n°2.
-    La BatchNorm est retirée dans cette variante : elle fait dépendre la sortie d'une image des autres
-    images du batch, ce qui casse la garantie de Lipschitz. Sans BatchNorm, les convolutions reprennent
-    un biais.
+    `spectral=True`: SNGAN variant (Miyato et al., 2018). Each convolution is wrapped in a **spectral
+    normalisation**: at every forward pass its weights are divided by their largest singular value
+    (estimated by one power-iteration step). Each layer then becomes 1-Lipschitz: a small change in the
+    image can only produce a small change in the score. The discriminator can no longer react abruptly
+    to changes in the generator — this targets the crises and collapses observed with model 2.
+    BatchNorm is removed in this variant: it makes the output for one image depend on the other images
+    of the batch, which breaks the Lipschitz guarantee. Without BatchNorm, the convolutions get a bias
+    back.
     """
 
     def __init__(self, ndf: int = 64, base: tuple[int, int] = (5, 4), n_down: int = 4, nc: int = 3,
@@ -80,20 +79,20 @@ class Discriminator(nn.Module):
         super().__init__()
         sn = nn.utils.parametrizations.spectral_norm if spectral else (lambda m: m)
         bias = spectral
-        # 1re couche sans BatchNorm (règle 2) : on laisse passer les statistiques brutes de l'image.
+        # First layer without BatchNorm (rule 2): the raw statistics of the image are let through.
         layers = [sn(nn.Conv2d(nc, ndf, 4, 2, 1, bias=bias)), nn.LeakyReLU(0.2, inplace=True)]
         c = ndf
         for _ in range(n_down - 1):
-            # Chaque bloc divise la résolution par deux et double les canaux.
-            # LeakyReLU plutôt que ReLU : un gradient non nul pour les valeurs négatives, indispensable
-            # pour que le générateur reçoive un signal même quand le discriminateur le rejette.
+            # Each block halves the resolution and doubles the channels.
+            # LeakyReLU rather than ReLU: a non-zero gradient for negative values, essential for the
+            # generator to receive a signal even when the discriminator rejects its images.
             layers += [sn(nn.Conv2d(c, c * 2, 4, 2, 1, bias=bias))]
             if not spectral:
                 layers += [nn.BatchNorm2d(c * 2)]
             layers += [nn.LeakyReLU(0.2, inplace=True)]
             c *= 2
-        # Convolution finale de noyau = grille de départ : résume toute l'image en un seul score.
-        # Pas de sigmoïde ici : elle est intégrée à la perte (BCEWithLogits), plus stable numériquement.
+        # Final convolution with kernel = starting grid: summarises the whole image into a single score.
+        # No sigmoid here: it is built into the loss (BCEWithLogits), which is numerically more stable.
         layers += [sn(nn.Conv2d(c, 1, kernel_size=base, stride=1, padding=0, bias=bias))]
         self.net = nn.Sequential(*layers)
 
@@ -102,9 +101,9 @@ class Discriminator(nn.Module):
 
 
 def dcgan_init(m: nn.Module) -> None:
-    """Initialisation de l'article DCGAN : convolutions ~ N(0 ; 0,02), BatchNorm γ ~ N(1 ; 0,02), β = 0."""
+    """Initialisation of the DCGAN paper: convolutions ~ N(0, 0.02), BatchNorm γ ~ N(1, 0.02), β = 0."""
     if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d)):
-        # Avec la normalisation spectrale, le poids « brut » est stocké dans parametrizations.weight.original
+        # With spectral normalisation, the "raw" weight is stored in parametrizations.weight.original
         w = m.parametrizations.weight.original if hasattr(m, "parametrizations") else m.weight
         nn.init.normal_(w, 0.0, 0.02)
         if m.bias is not None:
@@ -115,11 +114,11 @@ def dcgan_init(m: nn.Module) -> None:
 
 
 def base_grid(size: tuple[int, int], n_up: int) -> tuple[int, int]:
-    """Grille de départ (hauteur, largeur) pour une image (largeur, hauteur) après n_up doublements."""
+    """Starting grid (height, width) for an image (width, height) after n_up doublings."""
     w, h = size
     f = 2 ** n_up
     if w % f or h % f:
-        raise ValueError(f"{w}×{h} n'est pas divisible par {f}")
+        raise ValueError(f"{w}×{h} is not divisible by {f}")
     return h // f, w // f
 
 

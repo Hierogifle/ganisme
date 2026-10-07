@@ -1,17 +1,17 @@
-"""Portraits en 128×160 : file d'entraînements reprenable.
+"""Portraits at 128×160: resumable queue of training runs.
 
-Deux architectures sont comparées, avec les hyperparamètres du modèle final 64×80 (réglage Optuna n°26,
-notebook 08). Passer de 64×80 à 128×160 ajoute une couche de doublement au générateur et une couche de
-réduction au discriminateur (n_up = 5, toujours à partir d'une grille 5×4). Deux façons de le faire :
+Two architectures are compared, with the hyperparameters of the final 64×80 model (Optuna setting 26,
+notebook 08). Going from 64×80 to 128×160 adds one doubling layer to the generator and one reduction
+layer to the discriminator (n_up = 5, still starting from a 5×4 grid). There are two ways to do it:
 
-  - largeur 64 : on garde 64 filtres à la résolution la plus haute ; la couche ajoutée, côté grille 5×4,
-    a 1 024 canaux. Le réseau est plus grand (13,2 M de paramètres pour G) ;
-  - largeur 32 : on divise toutes les largeurs par deux. Le réseau a la même taille que le modèle 64×80
-    (3,8 M de paramètres) et s'entraîne presque aussi vite.
+  - width 64: 64 filters are kept at the highest resolution; the added layer, on the 5×4 grid side,
+    has 1,024 channels. The network is larger (13.2 M parameters for G);
+  - width 32: all widths are halved. The network has the same size as the 64×80 model (3.8 M
+    parameters) and trains almost as fast.
 
-Le script est **reprenable** : chaque entraînement sauvegarde son état complet à chaque évaluation, et un
-entraînement terminé n'est jamais relancé. Après une interruption (veille, arrêt du PC, fermeture de la
-session), relancer la même commande reprend là où le calcul s'est arrêté :
+The script is **resumable**: each training run saves its full state at every evaluation, and a
+finished run is never restarted. After an interruption (sleep, shutdown, closed session), running
+the same command again resumes where the computation stopped:
 
     python src/run_portrait_128.py
 """
@@ -22,7 +22,7 @@ import time
 
 import train as tr
 
-# Hyperparamètres du modèle final 64×80 (essai Optuna n°26)
+# Hyperparameters of the final 64×80 model (Optuna trial 26)
 BEST_64 = dict(loss="bce", spectral_norm=True, lr_g=0.0003041101671322451, lr_d=0.0004984335369118899,
                beta1=0.0, beta2=0.999, n_dis=2, diffaug="color,translation", batch_size=64)
 
@@ -43,8 +43,8 @@ def main() -> None:
         print(f"=== [{i}/{len(QUEUE)}] {cfg.name}", flush=True)
         t0 = time.time()
         tr.train(cfg)
-        print(f"=== [{i}/{len(QUEUE)}] {cfg.name} : fin ({(time.time() - t0) / 60:.0f} min dans cette session)", flush=True)
-    print("=== File terminée.", flush=True)
+        print(f"=== [{i}/{len(QUEUE)}] {cfg.name}: done ({(time.time() - t0) / 60:.0f} min in this session)", flush=True)
+    print("=== Queue finished.", flush=True)
 
 
 if __name__ == "__main__":

@@ -1,11 +1,13 @@
-"""GANisme — application Streamlit : générer des peintures avec les GAN entraînés dans le projet.
+"""GANisme — Streamlit application: generate paintings with the GANs trained in this project.
 
-Lancement :
+Run:
     streamlit run app.py
 
-L'application ne dépend que du dossier `models/` (poids des générateurs et fiche `models.json`, produits par
-`src/export_models.py`) et du code de `src/`. Elle fonctionne sans GPU : une image est générée en quelques
-millisecondes sur processeur.
+The application only depends on the `models/` folder (generator weights and the `models.json`
+description, both produced by `src/export_models.py`) and on the code in `src/`. It works without a
+GPU: an image is generated in a few milliseconds on a CPU.
+
+The interface is in French (the language of the project's audience); the code is in English.
 """
 from __future__ import annotations
 
@@ -26,22 +28,23 @@ sys.path.insert(0, str(ROOT / "src"))
 import generate as gn  # noqa: E402
 
 MODELS_DIR = ROOT / "models"
-DISPLAY_WIDTH = 256        # largeur d'affichage d'une peinture, en pixels
+DISPLAY_WIDTH = 256        # display width of a painting, in pixels
 MAX_SEED = 999_999
+GENRE_LABELS = {"portrait": "Portraits", "landscape": "Paysages"}      # interface labels
 
 st.set_page_config(page_title="GANisme — générateur de peintures", page_icon="🎨", layout="wide")
 
 
-# --------------------------------------------------------------------------- modèles
+# --------------------------------------------------------------------------- models
 @st.cache_data
 def load_cards() -> dict:
-    """Fiches descriptives des modèles (résolution, scores, hyperparamètres)."""
+    """Description of each model (resolution, scores, hyperparameters)."""
     return json.loads((MODELS_DIR / "models.json").read_text(encoding="utf-8"))
 
 
 @st.cache_resource(show_spinner="Chargement du modèle…")
 def load_model(key: str):
-    """Le générateur est chargé une seule fois, puis gardé en mémoire entre les interactions."""
+    """The generator is loaded once, then kept in memory across interactions."""
     device = "cuda" if torch.cuda.is_available() else "cpu"
     generator, _ = gn.load_generator_file(MODELS_DIR / f"{key}.pt", device)
     return generator
@@ -49,7 +52,7 @@ def load_model(key: str):
 
 @st.cache_data(show_spinner=False)
 def paint(key: str, n: int, seed: int) -> np.ndarray:
-    """n peintures (uint8, n × H × L × 3). Mis en cache : la même graine redonne les mêmes images."""
+    """n paintings (uint8, n × H × W × 3). Cached: the same seed gives the same images again."""
     return gn.sample(load_model(key), n, seed=seed)
 
 
@@ -58,9 +61,9 @@ def morph(key: str, seed_a: int, seed_b: int, steps: int) -> np.ndarray:
     return gn.interpolate(load_model(key), seed_a, seed_b, steps)
 
 
-# --------------------------------------------------------------------------- utilitaires d'image
+# --------------------------------------------------------------------------- image helpers
 def upscale(img: np.ndarray, width: int = DISPLAY_WIDTH) -> Image.Image:
-    """Agrandit une peinture pour l'affichage (Lanczos : agrandissement lissé, sans gros pixels)."""
+    """Enlarge a painting for display (Lanczos: smooth enlargement, no blocky pixels)."""
     im = Image.fromarray(img)
     return im.resize((width, round(width * im.height / im.width)), Image.LANCZOS)
 
@@ -72,7 +75,7 @@ def png_bytes(im: Image.Image) -> bytes:
 
 
 def zip_bytes(images: np.ndarray, prefix: str) -> bytes:
-    """Archive des peintures à leur taille d'origine, une par fichier."""
+    """Archive of the paintings at their original size, one per file."""
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
         for i, img in enumerate(images, 1):
@@ -81,7 +84,7 @@ def zip_bytes(images: np.ndarray, prefix: str) -> bytes:
 
 
 def gif_bytes(images: np.ndarray, width: int = DISPLAY_WIDTH, ms: int = 140) -> bytes:
-    """Animation aller-retour d'une interpolation."""
+    """Back-and-forth animation of an interpolation."""
     frames = [upscale(img, width) for img in images]
     frames = frames + frames[-2:0:-1]
     buf = io.BytesIO()
@@ -99,7 +102,7 @@ if not (MODELS_DIR / "models.json").exists():
     st.stop()
 
 cards = load_cards()
-genres = {c["genre_label"]: c["genre"] for c in cards.values()}          # « Portraits » -> « portrait »
+genres = {GENRE_LABELS[c["genre"]]: c["genre"] for c in cards.values()}          # "Portraits" -> "portrait"
 if "seed" not in st.session_state:
     st.session_state.seed = 2024
 
@@ -127,7 +130,7 @@ st.markdown(
 
 tab_generate, tab_morph, tab_about = st.tabs(["Générer", "Métamorphose", "À propos des modèles"])
 
-# ---- Onglet 1 : générer
+# ---- Tab 1: generate
 with tab_generate:
     images = paint(key, n, seed)
     per_row = 6 if card["height"] > card["width"] else 4
@@ -143,7 +146,7 @@ with tab_generate:
     st.caption(f"Graine {seed} · images générées en {card['width']}×{card['height']} px, agrandies à l'affichage. "
                "Les visages sont souvent déformés : c'est la principale limite de ces modèles.")
 
-# ---- Onglet 2 : interpolation entre deux peintures
+# ---- Tab 2: interpolation between two paintings
 with tab_morph:
     st.markdown(
         "Chaque peinture correspond à un point d'un **espace latent** de 100 dimensions. En se déplaçant "
@@ -165,11 +168,11 @@ with tab_morph:
     right.download_button("Télécharger l'animation (GIF)", animation,
                           file_name=f"ganisme_{key}_{seed_a}_vers_{seed_b}.gif", mime="image/gif")
 
-# ---- Onglet 3 : fiche des modèles
+# ---- Tab 3: model cards
 with tab_about:
     st.subheader("Les quatre modèles")
     rows = [{
-        "Modèle": k, "Genre": c["genre_label"], "Taille": f"{c['width']}×{c['height']}",
+        "Modèle": k, "Genre": GENRE_LABELS[c["genre"]], "Taille": f"{c['width']}×{c['height']}",
         "Images d'entraînement": c["n_train"], "Paramètres (M)": round(c["params_G"] / 1e6, 1),
         "Époques": c["epoch"], "Calcul (min)": c["train_minutes"], "FID": round(c["scores"]["FID"], 1),
         "Précision": round(c["scores"]["precision"], 2), "Rappel": round(c["scores"]["recall"], 2),

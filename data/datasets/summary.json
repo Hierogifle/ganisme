@@ -1,39 +1,39 @@
 {
-  "filtres_globaux": [
+  "global_filters": [
     {
-      "étape": "Peintures au catalogue",
-      "restantes": 32438,
-      "retirées": 0
+      "step": "Paintings in the catalogue",
+      "remaining": 32438,
+      "removed": 0
     },
     {
-      "étape": "Image téléchargée",
-      "restantes": 32437,
-      "retirées": 1
+      "step": "Image downloaded",
+      "remaining": 32437,
+      "removed": 1
     },
     {
-      "étape": "Pas une photo d'architecture",
-      "restantes": 32372,
-      "retirées": 65
+      "step": "Not an architecture photo",
+      "remaining": 32372,
+      "removed": 65
     },
     {
-      "étape": "Pas monochrome",
-      "restantes": 32328,
-      "retirées": 44
+      "step": "Not monochrome",
+      "remaining": 32328,
+      "removed": 44
     },
     {
-      "étape": "Pas un quasi-doublon",
-      "restantes": 26538,
-      "retirées": 5790
+      "step": "Not a near-duplicate",
+      "remaining": 26538,
+      "removed": 5790
     },
     {
-      "étape": "Pas de fond de studio",
-      "restantes": 26161,
-      "retirées": 377
+      "step": "No studio background",
+      "remaining": 26161,
+      "removed": 377
     },
     {
-      "étape": "Ratio entre 0.5 et 2.0",
-      "restantes": 24860,
-      "retirées": 1301
+      "step": "Aspect ratio between 0.5 and 2.0",
+      "remaining": 24860,
+      "removed": 1301
     }
   ],
   "genres": {
@@ -49,13 +49,13 @@
       "center_y": 0.4,
       "max_crop_loss": 0.25,
       "test_frac": 0.1,
-      "genre_après_filtres": 4376,
-      "format_compatible": 3832,
-      "retirées_format": 544,
+      "genre_after_filters": 4376,
+      "compatible_format": 3832,
+      "removed_by_format": 544,
       "train": 3448,
       "test": 384,
-      "perte_recadrage_médiane": 0.049,
-      "résolutions": [
+      "median_crop_loss": 0.049,
+      "resolutions": [
         [
           64,
           80
@@ -78,13 +78,13 @@
       "center_y": 0.5,
       "max_crop_loss": 0.25,
       "test_frac": 0.1,
-      "genre_après_filtres": 3741,
-      "format_compatible": 3016,
-      "retirées_format": 725,
+      "genre_after_filters": 3741,
+      "compatible_format": 3016,
+      "removed_by_format": 725,
       "train": 2714,
       "test": 302,
-      "perte_recadrage_médiane": 0.071,
-      "résolutions": [
+      "median_crop_loss": 0.071,
+      "resolutions": [
         [
           64,
           48

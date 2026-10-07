@@ -1,24 +1,24 @@
-"""Métriques d'évaluation des GAN — toutes calculées dans l'espace des features d'Inception-v3.
+"""GAN evaluation metrics — all computed in the Inception-v3 feature space.
 
-Principe commun : on ne compare pas les pixels (deux tableaux très semblables peuvent différer pixel à
-pixel), mais des **représentations** extraites par un réseau pré-entraîné. Chaque image — réelle ou
-générée — est convertie par Inception-v3 en :
-  - un vecteur de 2048 features (couche `pool3`) : décrit le contenu visuel (textures, formes, objets) ;
-  - 1008 logits de classification ImageNet : servent uniquement à l'Inception Score.
+Common principle: pixels are not compared (two very similar paintings can differ pixel by pixel);
+**representations** extracted by a pre-trained network are compared instead. Each image — real or
+generated — is converted by Inception-v3 into:
+  - a vector of 2048 features (`pool3` layer): describes the visual content (textures, shapes, objects);
+  - 1008 ImageNet classification logits: used only by the Inception Score.
 
-On utilise les poids « TF-compatibles » de torch-fidelity, identiques à ceux de l'implémentation
-d'origine du FID : les scores sont comparables à ceux publiés dans la littérature.
+The "TF-compatible" weights of torch-fidelity are used, identical to those of the original FID
+implementation: scores are comparable with those published in the literature.
 
-| Métrique        | Mesure                                   | Meilleur | Référence                          |
+| Metric          | Measures                                 | Best     | Reference                          |
 |-----------------|------------------------------------------|----------|------------------------------------|
-| FID             | distance entre distributions (qualité + diversité) | ↓ 0 | Heusel et al., 2017               |
-| KID             | idem, sans biais de taille d'échantillon | ↓ 0      | Bińkowski et al., 2018             |
-| IS              | netteté + variété des classes ImageNet   | ↑        | Salimans et al., 2016              |
-| Précision       | part des images générées « réalistes »   | ↑ 1      | Kynkäänniemi et al., 2019          |
-| Rappel          | part du réel couverte par le générateur  | ↑ 1      | Kynkäänniemi et al., 2019          |
-| Densité         | précision robuste aux outliers           | ↑ ~1     | Naeem et al., 2020                 |
-| Couverture      | rappel robuste aux outliers              | ↑ 1      | Naeem et al., 2020                 |
-| Mémorisation    | le générateur recopie-t-il le train ?    | ≈ 1      | test du plus proche voisin         |
+| FID             | distance between distributions (quality + diversity) | ↓ 0 | Heusel et al., 2017             |
+| KID             | same, without sample-size bias           | ↓ 0      | Bińkowski et al., 2018             |
+| IS              | sharpness + variety of ImageNet classes  | ↑        | Salimans et al., 2016              |
+| Precision       | share of generated images that look real | ↑ 1      | Kynkäänniemi et al., 2019          |
+| Recall          | share of the real variety that is covered | ↑ 1     | Kynkäänniemi et al., 2019          |
+| Density         | precision, robust to outliers            | ↑ ~1     | Naeem et al., 2020                 |
+| Coverage        | recall, robust to outliers               | ↑ 1      | Naeem et al., 2020                 |
+| Memorisation    | does the generator copy the training set? | ≈ 1     | nearest-neighbour test             |
 """
 from __future__ import annotations
 
@@ -32,9 +32,9 @@ from scipy import linalg
 _EXTRACTOR = None
 
 
-# --------------------------------------------------------------------------- extraction
+# --------------------------------------------------------------------------- feature extraction
 def get_extractor(device: str | None = None):
-    """Inception-v3 (poids TF du FID d'origine), chargé une seule fois."""
+    """Inception-v3 (TF weights of the original FID), loaded only once."""
     global _EXTRACTOR
     if _EXTRACTOR is None:
         from torch_fidelity.feature_extractor_inceptionv3 import FeatureExtractorInceptionV3
@@ -46,11 +46,11 @@ def get_extractor(device: str | None = None):
 
 @torch.no_grad()
 def extract_features(images: np.ndarray | torch.Tensor, batch_size: int = 128) -> tuple[np.ndarray, np.ndarray]:
-    """Features (N, 2048) et logits (N, 1008) d'un lot d'images.
+    """Features (N, 2048) and logits (N, 1008) of a set of images.
 
-    `images` : uint8, soit (N, H, W, 3) en numpy (format du dataset), soit (N, 3, H, W) en torch.
-    L'extracteur redimensionne lui-même en 299×299 (interpolation identique à TensorFlow) : on lui
-    passe les images à leur résolution d'entraînement, réelles comme générées.
+    `images`: uint8, either (N, H, W, 3) in numpy (dataset format) or (N, 3, H, W) in torch.
+    The extractor resizes to 299×299 itself (same interpolation as TensorFlow): images are passed at
+    their training resolution, real and generated alike.
     """
     fe = get_extractor()
     if isinstance(images, np.ndarray):
@@ -59,7 +59,7 @@ def extract_features(images: np.ndarray | torch.Tensor, batch_size: int = 128) -
     for i in range(0, len(images), batch_size):
         batch = images[i:i + batch_size].to(fe.device)
         if batch.dtype != torch.uint8:
-            raise TypeError("les images doivent être en uint8 [0, 255]")
+            raise TypeError("images must be uint8 in [0, 255]")
         f, lg = fe(batch)
         feats.append(f.double().cpu())
         logits.append(lg.double().cpu())
@@ -67,7 +67,7 @@ def extract_features(images: np.ndarray | torch.Tensor, batch_size: int = 128) -
 
 
 def to_uint8(x: torch.Tensor) -> torch.Tensor:
-    """Sortie d'un générateur (tanh, dans [-1, 1]) -> uint8 [0, 255], format attendu par l'extracteur."""
+    """Generator output (tanh, in [-1, 1]) -> uint8 [0, 255], the format expected by the extractor."""
     return ((x.clamp(-1, 1) + 1) * 127.5).round().to(torch.uint8)
 
 
@@ -75,21 +75,20 @@ def to_uint8(x: torch.Tensor) -> torch.Tensor:
 def fid(real: np.ndarray, fake: np.ndarray) -> float:
     """Fréchet Inception Distance.
 
-    On modélise chaque nuage de features par une gaussienne (moyenne μ, covariance Σ) et on calcule
-    la distance de Fréchet (Wasserstein-2) entre les deux gaussiennes :
+    Each cloud of features is modelled by a Gaussian (mean μ, covariance Σ) and the Fréchet
+    (Wasserstein-2) distance between the two Gaussians is computed:
 
         FID = ||μ_r − μ_f||²  +  Tr(Σ_r + Σ_f − 2 (Σ_r Σ_f)^½)
 
-    Le 1er terme compare le « contenu moyen », le 2nd la dispersion : un générateur en mode collapse a
-    une covariance écrasée et un FID élevé, même si ses images sont belles. Attention : le FID est
-    **biaisé par la taille d'échantillon** (plus N est petit, plus il est élevé) ; ne comparer que des
-    FID calculés avec le même N.
+    The first term compares the "average content", the second the spread: a generator in mode collapse
+    has a squashed covariance and a high FID, even if its images look good. Warning: FID is **biased by
+    the sample size** (the smaller N, the higher the FID); only compare FIDs computed with the same N.
     """
     mu1, mu2 = real.mean(0), fake.mean(0)
     s1, s2 = np.cov(real, rowvar=False), np.cov(fake, rowvar=False)
-    # Tr((Σ_r Σ_f)^½) = somme des racines des valeurs propres de Σ_r Σ_f (réelles et ≥ 0 en théorie ;
-    # on écarte les petites parties imaginaires / négatives dues aux erreurs numériques).
-    # Équivalent à scipy.linalg.sqrtm mais plus rapide et plus stable sur des matrices 2048×2048.
+    # Tr((Σ_r Σ_f)^½) = sum of the square roots of the eigenvalues of Σ_r Σ_f (real and ≥ 0 in theory;
+    # small imaginary / negative parts caused by numerical errors are discarded).
+    # Equivalent to scipy.linalg.sqrtm but faster and more stable on 2048×2048 matrices.
     eig = linalg.eigvals(s1 @ s2)
     tr_covmean = np.sqrt(np.clip(eig.real, 0, None)).sum()
     return float(((mu1 - mu2) ** 2).sum() + np.trace(s1) + np.trace(s2) - 2 * tr_covmean)
@@ -97,12 +96,12 @@ def fid(real: np.ndarray, fake: np.ndarray) -> float:
 
 def kid(real: np.ndarray, fake: np.ndarray, n_subsets: int = 100, subset_size: int = 1000,
         seed: int = 0) -> tuple[float, float]:
-    """Kernel Inception Distance : MMD² non biaisé avec un noyau polynomial k(x, y) = (x·y / d + 1)³.
+    """Kernel Inception Distance: unbiased MMD² with a polynomial kernel k(x, y) = (x·y / d + 1)³.
 
-    Contrairement au FID, son estimateur est **non biaisé** : il reste comparable entre des échantillons
-    de tailles différentes, ce qui en fait la bonne métrique pour les petits jeux de données (notre test
-    set fait quelques centaines d'images). On le moyenne sur des sous-échantillons tirés au hasard.
-    Renvoie (moyenne, écart-type) ; on l'affiche souvent ×1000.
+    Unlike FID, its estimator is **unbiased**: it stays comparable across samples of different sizes,
+    which makes it the right metric for small datasets (our test set holds a few hundred images). It is
+    averaged over random subsamples.
+    Returns (mean, standard deviation); it is usually displayed ×1000.
     """
     rng = np.random.default_rng(seed)
     d = real.shape[1]
@@ -118,12 +117,12 @@ def kid(real: np.ndarray, fake: np.ndarray, n_subsets: int = 100, subset_size: i
 
 
 def inception_score(logits: np.ndarray, splits: int = 10) -> tuple[float, float]:
-    """Inception Score : exp( E_x[ KL( p(y|x) || p(y) ) ] ).
+    """Inception Score: exp( E_x[ KL( p(y|x) || p(y) ) ] ).
 
-    Élevé si chaque image est classée avec confiance (netteté) ET si les classes sont variées
-    (diversité). **Limite importante pour ce projet** : les classes sont celles d'ImageNet (chiens,
-    voitures…), pas des catégories de peinture ; l'IS est donc peu pertinent sur des œuvres d'art et
-    n'est fourni qu'à titre indicatif, pour comparaison avec la littérature.
+    High if each image is classified with confidence (sharpness) AND if the classes are varied
+    (diversity). **Important limitation for this project**: the classes are those of ImageNet (dogs,
+    cars…), not painting categories; IS is therefore barely relevant for artworks and is only reported
+    for information, for comparison with the literature.
     """
     p = np.exp(logits - logits.max(1, keepdims=True))
     p /= p.sum(1, keepdims=True)
@@ -135,36 +134,36 @@ def inception_score(logits: np.ndarray, splits: int = 10) -> tuple[float, float]
     return float(np.mean(scores)), float(np.std(scores))
 
 
-# --------------------------------------------------------------------------- précision / rappel
+# --------------------------------------------------------------------------- precision / recall
 def _pairwise(a: np.ndarray, b: np.ndarray) -> torch.Tensor:
     dev = "cuda" if torch.cuda.is_available() else "cpu"
     return torch.cdist(torch.from_numpy(a).float().to(dev), torch.from_numpy(b).float().to(dev))
 
 
 def _knn_radii(x: np.ndarray, k: int) -> torch.Tensor:
-    """Distance de chaque point à son k-ième plus proche voisin (dans son propre nuage)."""
+    """Distance from each point to its k-th nearest neighbour (within its own cloud)."""
     d = _pairwise(x, x)
-    return d.kthvalue(k + 1, dim=1).values  # k+1 : le 1er voisin est le point lui-même (distance 0)
+    return d.kthvalue(k + 1, dim=1).values  # k+1: the first neighbour is the point itself (distance 0)
 
 
 def precision_recall_density_coverage(real: np.ndarray, fake: np.ndarray, k: int = 5) -> dict:
-    """Quatre métriques qui séparent **qualité** et **diversité**, ce que le FID ne fait pas.
+    """Four metrics that separate **quality** from **diversity**, which FID does not.
 
-    On approxime la « variété » des images réelles par l'union de boules centrées sur chaque image
-    réelle, de rayon = distance à son k-ième voisin réel (idem pour les images générées).
+    The "manifold" of real images is approximated by the union of balls centred on each real image,
+    with radius = distance to its k-th real neighbour (same for generated images).
 
-    - Précision : part des images générées qui tombent dans la variété réelle → *réalisme*.
-    - Rappel    : part des images réelles qui tombent dans la variété générée → *diversité*.
-      Un mode collapse donne une précision élevée mais un rappel effondré.
-    - Densité   : comme la précision, mais compte combien de boules réelles contiennent chaque image
-      générée (normalisé par k) ; ~1 pour un bon générateur, moins sensible aux outliers réels.
-    - Couverture : part des images réelles dont la boule contient au moins une image générée ;
-      version robuste du rappel.
+    - Precision: share of generated images that fall inside the real manifold → *realism*.
+    - Recall   : share of real images that fall inside the generated manifold → *diversity*.
+      A mode collapse gives a high precision but a collapsed recall.
+    - Density  : like precision, but counts how many real balls contain each generated image
+      (normalised by k); ~1 for a good generator, less sensitive to real outliers.
+    - Coverage : share of real images whose ball contains at least one generated image;
+      a robust version of recall.
     """
     r_real = _knn_radii(real, k)
     r_fake = _knn_radii(fake, k)
     d_rf = _pairwise(real, fake)                          # (N_real, N_fake)
-    in_real = d_rf <= r_real[:, None]                     # image générée j dans la boule du réel i
+    in_real = d_rf <= r_real[:, None]                     # generated image j inside the ball of real image i
     precision = in_real.any(0).float().mean().item()
     recall = (d_rf <= r_fake[None, :]).any(1).float().mean().item()
     density = (in_real.sum(0).float() / k).mean().item()
@@ -172,17 +171,17 @@ def precision_recall_density_coverage(real: np.ndarray, fake: np.ndarray, k: int
     return {"precision": precision, "recall": recall, "density": density, "coverage": coverage}
 
 
-# --------------------------------------------------------------------------- mémorisation
+# --------------------------------------------------------------------------- memorisation
 def memorization(fake: np.ndarray, train: np.ndarray, test: np.ndarray) -> dict:
-    """Le générateur recopie-t-il ses images d'entraînement ?
+    """Does the generator copy its training images?
 
-    Pour chaque image générée, on mesure la distance (features) à l'image du **train** la plus proche.
-    On la compare à la même distance calculée pour des images réelles **jamais vues** (le test set) :
-    c'est l'écart « normal » entre deux œuvres différentes du même genre.
+    For each generated image, the distance (in feature space) to the nearest **training** image is
+    measured. It is compared with the same distance computed for real images **never seen** by the
+    model (the test set): this is the "normal" gap between two different artworks of the same genre.
 
-    - `mem_ratio` = médiane(d fake→train) / médiane(d test→train) : ≈ 1 → normal ; ≪ 1 → copies.
-    - `copies`    = part des images générées plus proches du train que 99 % des images test
-      (seuil = 1er percentile des distances test→train) : ≈ 1 % attendu par construction.
+    - `mem_ratio` = median(d fake→train) / median(d test→train): ≈ 1 → normal; ≪ 1 → copies.
+    - `copies`    = share of generated images closer to the training set than 99 % of the test images
+      (threshold = 1st percentile of the test→train distances): ≈ 1 % expected by construction.
     """
     d_fake = _pairwise(fake, train).min(1).values.cpu().numpy()
     d_test = _pairwise(test, train).min(1).values.cpu().numpy()
@@ -191,10 +190,10 @@ def memorization(fake: np.ndarray, train: np.ndarray, test: np.ndarray) -> dict:
             "copies": float((d_fake < threshold).mean())}
 
 
-# --------------------------------------------------------------------------- évaluation complète
+# --------------------------------------------------------------------------- full evaluation
 @dataclass
 class Reference:
-    """Features des images réelles d'un genre à une résolution donnée (calculées une fois, en cache)."""
+    """Features of the real images of a genre at a given resolution (computed once, then cached)."""
     train: np.ndarray
     test: np.ndarray
     train_logits: np.ndarray
@@ -202,7 +201,7 @@ class Reference:
 
     @classmethod
     def load_or_compute(cls, genre: str, size: tuple[int, int], cache_dir: Path) -> "Reference":
-        from dataset import load_split  # import local : metrics.py reste utilisable sans le dataset
+        from dataset import load_split  # local import: metrics.py stays usable without the dataset
         path = cache_dir / f"inception_ref_{size[0]}x{size[1]}.npz"
         if path.exists():
             z = np.load(path)
@@ -214,10 +213,10 @@ class Reference:
 
 
 def fid_at_n(real: np.ndarray, fake: np.ndarray, n: int, repeats: int = 3, seed: int = 0) -> float:
-    """FID moyen sur `repeats` sous-échantillons de `n` images générées.
+    """Mean FID over `repeats` subsamples of `n` generated images.
 
-    Sert à comparer un modèle au « plancher » (le test set, qui ne compte que quelques centaines
-    d'images) à effectif égal, puisque le FID dépend de la taille d'échantillon.
+    Used to compare a model with the "floor" (the test set, which only holds a few hundred images)
+    at equal sample size, since FID depends on the sample size.
     """
     if len(fake) <= n:
         return fid(real, fake)
@@ -227,18 +226,18 @@ def fid_at_n(real: np.ndarray, fake: np.ndarray, n: int, repeats: int = 3, seed:
 
 def evaluate(fake_feats: np.ndarray, fake_logits: np.ndarray, ref: Reference, k: int = 5,
              light: bool = False) -> dict:
-    """Toutes les métriques d'un lot d'images générées, par rapport au train set du genre.
+    """Every metric for a set of generated images, against the training set of the genre.
 
-    Protocole à respecter pour comparer des modèles : même genre, même résolution, même nombre d'images
-    générées (voir N_EVAL dans le notebook 03), même référence (le train set).
+    Protocol to follow when comparing models: same genre, same resolution, same number of generated
+    images (see N_EVAL in notebook 03), same reference (the training set).
 
-    Deux FID sont renvoyés :
-    - `FID`       : avec toutes les images générées (N_EVAL) → pour comparer les modèles entre eux ;
-    - `FID_ntest` : avec autant d'images que le test set → directement comparable au plancher
-                    « réel non vu », qui ne peut être calculé qu'avec cet effectif.
+    Two FIDs are returned:
+    - `FID`       : with all generated images (N_EVAL) → to compare models with each other;
+    - `FID_ntest` : with as many images as the test set → directly comparable with the "unseen real"
+                    floor, which can only be computed at that sample size.
 
-    `light=True` (recherche d'hyperparamètres) : seulement FID, précision/rappel/densité/couverture et
-    mémorisation — environ 8 s au lieu de 35 s. KID, FID_ntest et IS sont omis.
+    `light=True` (hyperparameter search): only FID, precision/recall/density/coverage and
+    memorisation — about 8 s instead of 35 s. KID, FID_ntest and IS are skipped.
     """
     base = {"n": len(fake_feats), "FID": fid(ref.train, fake_feats),
             **precision_recall_density_coverage(ref.train, fake_feats, k=k),

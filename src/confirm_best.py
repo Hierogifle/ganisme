@@ -1,18 +1,18 @@
-"""Confirmation des meilleurs réglages trouvés par Optuna.
+"""Confirm the best settings found by Optuna.
 
-L'étude Optuna (notebook 07) a trois limites : un seul entraînement par essai, 300 époques seulement,
-et aucun checkpoint sauvegardé. Ce script ré-entraîne les meilleurs essais :
+The Optuna study (notebook 07) has three limits: a single training run per trial, only 300 epochs,
+and no checkpoint saved. This script retrains the best trials:
 
-  - plus longtemps (600 époques par défaut) : les meilleurs essais progressaient encore à l'époque 300 ;
-  - avec plusieurs graines : pour distinguer un vrai gain d'un coup de chance ;
-  - avec l'évaluation complète et les checkpoints : pour obtenir un modèle utilisable.
+  - for longer (600 epochs by default): the best trials were still improving at epoch 300;
+  - with several seeds: to tell a real gain from a lucky draw;
+  - with the full evaluation and checkpoints: to get a usable model.
 
-Les hyperparamètres sont relus directement dans la base de l'étude (aucune recopie à la main).
-Les runs sont entrelacés (essai A graine 1, essai B graine 1, essai A graine 2, …) : si le calcul est
-interrompu, on dispose déjà d'une comparaison entre les réglages. Un run terminé n'est jamais relancé :
-relancer la même commande reprend là où le calcul s'est arrêté.
+Hyperparameters are read directly from the study database (nothing is copied by hand).
+Runs are interleaved (trial A seed 1, trial B seed 1, trial A seed 2, …): if the computation is
+interrupted, a comparison between the settings is already available. A finished run is never
+restarted: running the same command again resumes where the computation stopped.
 
-Exemple :
+Example:
     python src/confirm_best.py --trials 26 27 --seeds 42 1 2 --epochs 600
 """
 from __future__ import annotations
@@ -30,7 +30,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def is_done(name: str, epochs: int) -> bool:
-    """Un run est terminé si sa dernière évaluation porte sur la dernière époque et qu'il a ses checkpoints."""
+    """A run is finished if its last evaluation is at the last epoch and it has its checkpoints."""
     run = tr.RUNS / name
     if not (run / "eval.csv").exists() or not (run / "checkpoints" / "best.pt").exists():
         return False
@@ -52,19 +52,19 @@ def main() -> None:
                               storage=f"sqlite:///{(ROOT / 'reports' / 'optuna' / f'{args.study}.db').as_posix()}")
     params = {t.number: t.params for t in study.trials if t.number in args.trials}
 
-    plan = [(n, s) for s in args.seeds for n in args.trials]          # entrelacé par graine
-    print(f"{len(plan)} entraînements de {args.epochs} époques : {plan}", flush=True)
+    plan = [(n, s) for s in args.seeds for n in args.trials]          # interleaved by seed
+    print(f"{len(plan)} training runs of {args.epochs} epochs: {plan}", flush=True)
     for i, (n, seed) in enumerate(plan, 1):
         name = f"optuna{n}_{args.genre}_{args.res}_s{seed}"
         if is_done(name, args.epochs):
-            print(f"[{i}/{len(plan)}] {name} : déjà terminé, ignoré", flush=True)
+            print(f"[{i}/{len(plan)}] {name}: already finished, skipped", flush=True)
             continue
-        print(f"[{i}/{len(plan)}] {name} : {params[n]}", flush=True)
+        print(f"[{i}/{len(plan)}] {name}: {params[n]}", flush=True)
         t0 = time.time()
         tr.train(tr.Config(name=name, genre=args.genre, res=args.res, epochs=args.epochs, seed=seed,
                            eval_every=25, **params[n]))
-        print(f"[{i}/{len(plan)}] {name} terminé en {(time.time() - t0) / 60:.0f} min", flush=True)
-    print("Confirmation terminée.", flush=True)
+        print(f"[{i}/{len(plan)}] {name} finished in {(time.time() - t0) / 60:.0f} min", flush=True)
+    print("Confirmation finished.", flush=True)
 
 
 if __name__ == "__main__":

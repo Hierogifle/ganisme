@@ -1,28 +1,27 @@
-"""DiffAugment — augmentation différentiable pour GAN entraînés sur peu de données.
+"""DiffAugment — differentiable augmentation for GANs trained on little data.
 
-Référence : Zhao, Liu, Lin, Zhu & Han (2020), « Differentiable Augmentation for Data-Efficient GAN
-Training », NeurIPS. Réimplémentation commentée, adaptée aux images rectangulaires.
+Reference: Zhao, Liu, Lin, Zhu & Han (2020), "Differentiable Augmentation for Data-Efficient GAN
+Training", NeurIPS. Commented re-implementation, adapted to rectangular images.
 
-Le problème : avec quelques milliers d'images, le discriminateur finit par **mémoriser** le train
-(cf. notebook 04 : D(x) → 0,98, D(G(z)) → 0,02). Il ne généralise plus et ne donne plus de signal
-utile au générateur.
+The problem: with a few thousand images, the discriminator ends up **memorising** the training set
+(see notebook 04: D(x) → 0.98, D(G(z)) → 0.02). It no longer generalises and no longer gives a
+useful signal to the generator.
 
-Pourquoi ne pas simplement augmenter les vraies images ? Parce que le générateur apprendrait alors à
-produire des images augmentées (décalées, découpées, recolorées) : les augmentations « fuiraient »
-dans les générations.
+Why not simply augment the real images? Because the generator would then learn to produce augmented
+images (shifted, cut out, recoloured): the augmentations would "leak" into the generated images.
 
-La solution de DiffAugment : appliquer **la même famille de transformations aléatoires aux vraies ET
-aux fausses images**, à chaque passage dans le discriminateur, y compris pendant la mise à jour du
-générateur. Le discriminateur ne voit jamais deux fois exactement la même image réelle, et comme les
-deux distributions sont transformées de la même façon, l'objectif du générateur reste de produire
-des images *non augmentées* réalistes. Les transformations sont **différentiables** (additions,
-multiplications, décalages d'indices) : le gradient les traverse pour atteindre le générateur.
+The DiffAugment solution: apply **the same family of random transformations to real AND fake
+images**, at every pass through the discriminator, including during the generator update. The
+discriminator never sees exactly the same real image twice, and since both distributions are
+transformed in the same way, the goal of the generator remains to produce realistic *non-augmented*
+images. The transformations are **differentiable** (additions, multiplications, index shifts): the
+gradient flows through them to reach the generator.
 
-Trois familles (politique « color,translation,cutout » recommandée par l'article) :
-  - color       : luminosité, saturation et contraste aléatoires ;
-  - translation : décalage aléatoire jusqu'à 1/8 de la taille, bords remplis de zéros (gris moyen en [-1, 1]) ;
-  - cutout      : un rectangle de la moitié de la taille de l'image mis à zéro, à une position aléatoire.
-Chaque image d'un batch reçoit ses propres tirages aléatoires.
+Three families ("color,translation,cutout" policy recommended by the paper):
+  - color       : random brightness, saturation and contrast;
+  - translation : random shift of up to 1/8 of the size, borders filled with zeros (mid-grey in [-1, 1]);
+  - cutout      : a rectangle half the size of the image set to zero, at a random position.
+Each image of a batch gets its own random draws.
 """
 from __future__ import annotations
 
@@ -31,7 +30,7 @@ import torch.nn.functional as F
 
 
 def diff_augment(x: torch.Tensor, policy: str = "color,translation,cutout") -> torch.Tensor:
-    """Applique la politique à un batch (N, C, H, W) d'images dans [-1, 1]."""
+    """Apply the policy to a batch (N, C, H, W) of images in [-1, 1]."""
     if not policy:
         return x
     for name in policy.split(","):
@@ -40,32 +39,32 @@ def diff_augment(x: torch.Tensor, policy: str = "color,translation,cutout") -> t
     return x.contiguous()
 
 
-# --------------------------------------------------------------------------- couleur
+# --------------------------------------------------------------------------- colour
 def rand_brightness(x: torch.Tensor) -> torch.Tensor:
-    # Ajoute une constante dans [-0,5 ; 0,5] à toute l'image (plus claire / plus sombre).
+    # Adds a constant in [-0.5, 0.5] to the whole image (lighter / darker).
     return x + (torch.rand(x.size(0), 1, 1, 1, device=x.device) - 0.5)
 
 
 def rand_saturation(x: torch.Tensor) -> torch.Tensor:
-    # Écarte ou rapproche chaque pixel de la moyenne de ses canaux (facteur dans [0 ; 2]) :
-    # 0 = niveaux de gris, 1 = inchangé, 2 = couleurs deux fois plus saturées.
+    # Moves each pixel away from or towards the mean of its channels (factor in [0, 2]):
+    # 0 = greyscale, 1 = unchanged, 2 = colours twice as saturated.
     mean = x.mean(dim=1, keepdim=True)
     return (x - mean) * (torch.rand(x.size(0), 1, 1, 1, device=x.device) * 2) + mean
 
 
 def rand_contrast(x: torch.Tensor) -> torch.Tensor:
-    # Écarte ou rapproche chaque pixel de la moyenne de l'image (facteur dans [0,5 ; 1,5]).
+    # Moves each pixel away from or towards the mean of the image (factor in [0.5, 1.5]).
     mean = x.mean(dim=[1, 2, 3], keepdim=True)
     return (x - mean) * (torch.rand(x.size(0), 1, 1, 1, device=x.device) + 0.5) + mean
 
 
-# --------------------------------------------------------------------------- géométrie
+# --------------------------------------------------------------------------- geometry
 def rand_translation(x: torch.Tensor, ratio: float = 0.125) -> torch.Tensor:
-    """Décale chaque image d'au plus `ratio` de sa hauteur / largeur (indépendamment sur les deux axes).
+    """Shift each image by at most `ratio` of its height / width (independently on both axes).
 
-    Implémentation par indexation : on remplit l'image d'une bordure de zéros, puis on lit chaque pixel
-    à sa position décalée. C'est une simple sélection d'indices, donc différentiable par rapport aux
-    valeurs des pixels.
+    Implemented by indexing: the image is padded with a border of zeros, then each pixel is read at
+    its shifted position. This is a plain index selection, hence differentiable with respect to the
+    pixel values.
     """
     n, _, h, w = x.shape
     sh, sw = int(h * ratio + 0.5), int(w * ratio + 0.5)
@@ -75,15 +74,15 @@ def rand_translation(x: torch.Tensor, ratio: float = 0.125) -> torch.Tensor:
                                 torch.arange(w, device=x.device), indexing="ij")
     gy = torch.clamp(gy + ty + 1, 0, h + 1)
     gx = torch.clamp(gx + tx + 1, 0, w + 1)
-    padded = F.pad(x, [1, 1, 1, 1, 0, 0, 0, 0])            # bordure de zéros d'1 pixel
+    padded = F.pad(x, [1, 1, 1, 1, 0, 0, 0, 0])            # 1-pixel border of zeros
     return padded.permute(0, 2, 3, 1).contiguous()[gb, gy, gx].permute(0, 3, 1, 2)
 
 
 def rand_cutout(x: torch.Tensor, ratio: float = 0.5) -> torch.Tensor:
-    """Met à zéro un rectangle de taille `ratio` × (hauteur, largeur), centré au hasard dans l'image.
+    """Set to zero a rectangle of size `ratio` × (height, width), centred at random in the image.
 
-    Oblige le discriminateur à juger l'image sur l'ensemble de ses parties, sans pouvoir se reposer
-    sur un seul détail mémorisé.
+    Forces the discriminator to judge the image on all of its parts, without being able to rely on a
+    single memorised detail.
     """
     n, _, h, w = x.shape
     ch, cw = int(h * ratio + 0.5), int(w * ratio + 0.5)

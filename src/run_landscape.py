@@ -1,20 +1,20 @@
-"""Paysages : second genre, même démarche que pour les portraits, en trois étapes.
+"""Landscapes: second genre, same approach as for portraits, in three steps.
 
-On ne refait pas tout le parcours (3 modèles + Optuna) : on vérifie si ce qui a été appris sur les portraits
-se transpose à un autre genre, puis on monte en résolution.
+The whole journey (3 models + Optuna) is not repeated: the point is to check whether what was learned
+on portraits transfers to another genre, and then to move up in resolution.
 
-  Étape 1 — 64×48
-    a. `landscape_64_dcgan_s42`  DCGAN de base, hyperparamètres de l'article (équivalent du modèle n°1) :
-                                 le point de départ, pour mesurer le gain.
-    b. `landscape_64_best_s42`   hyperparamètres trouvés par Optuna sur les portraits (réglage n°26),
-                                 repris tels quels : se transposent-ils à un autre genre ?
-  Étape 2 — 128×96
-    c. `landscape_128_w64_s42`   même réglage, une couche de plus, largeur 64 (architecture retenue
-                                 pour les portraits en 128×160).
+  Stage 1 — 64×48
+    a. `landscape_64_dcgan_s42`  baseline DCGAN, hyperparameters of the paper (equivalent of model 1):
+                                 the starting point, to measure the gain.
+    b. `landscape_64_best_s42`   hyperparameters found by Optuna on portraits (setting 26), reused
+                                 as they are: do they transfer to another genre?
+  Stage 2 — 128×96
+    c. `landscape_128_w64_s42`   same setting, one more layer, width 64 (the architecture selected for
+                                 portraits at 128×160).
 
-Format 4:3 horizontal : la grille de départ du générateur est 3×4 (hauteur × largeur) au lieu de 5×4.
+4:3 horizontal format: the starting grid of the generator is 3×4 (height × width) instead of 5×4.
 
-Reprenable : relancer la même commande après une interruption reprend là où le calcul s'est arrêté.
+Resumable: after an interruption, running the same command again resumes where the computation stopped.
 
     python src/run_landscape.py --stage 1
     python src/run_landscape.py --stage 2
@@ -28,7 +28,7 @@ import train as tr
 from run_portrait_128 import BEST_64
 
 QUEUE = {
-    1: [dict(name="landscape_64_dcgan_s42", res=64, n_up=4, epochs=500),              # réglages par défaut = DCGAN
+    1: [dict(name="landscape_64_dcgan_s42", res=64, n_up=4, epochs=500),              # default settings = DCGAN
         dict(name="landscape_64_best_s42", res=64, n_up=4, epochs=600, **BEST_64)],
     2: [dict(name="landscape_128_w64_s42", res=128, n_up=5, epochs=600, **BEST_64)],
 }
@@ -45,8 +45,8 @@ def main() -> None:
         print(f"=== [{i}/{len(jobs)}] {cfg.name}", flush=True)
         t0 = time.time()
         tr.train(cfg)
-        print(f"=== [{i}/{len(jobs)}] {cfg.name} : fin ({(time.time() - t0) / 60:.0f} min dans cette session)", flush=True)
-    print("=== File terminée.", flush=True)
+        print(f"=== [{i}/{len(jobs)}] {cfg.name}: done ({(time.time() - t0) / 60:.0f} min in this session)", flush=True)
+    print("=== Queue finished.", flush=True)
 
 
 if __name__ == "__main__":

@@ -1,7 +1,6 @@
 {
   "portrait_64": {
     "genre": "portrait",
-    "genre_label": "Portraits",
     "width": 64,
     "height": 80,
     "run": "optuna26_portrait_64_s1",
@@ -40,7 +39,6 @@
   },
   "portrait_128": {
     "genre": "portrait",
-    "genre_label": "Portraits",
     "width": 128,
     "height": 160,
     "run": "portrait_128_w64_s42",
@@ -79,7 +77,6 @@
   },
   "landscape_64": {
     "genre": "landscape",
-    "genre_label": "Paysages",
     "width": 64,
     "height": 48,
     "run": "landscape_64_best_s42",
@@ -118,7 +115,6 @@
   },
   "landscape_128": {
     "genre": "landscape",
-    "genre_label": "Paysages",
     "width": 128,
     "height": 96,
     "run": "landscape_128_w64_s42",
