@@ -81,7 +81,11 @@ final 64×80 model.*
 
 ## The application
 
+**Try it online: https://ganisme-romu.streamlit.app**
+
 ![Streamlit application](docs/images/app.jpg)
+
+To run it locally:
 
 ```bash
 pip install -r requirements.txt
@@ -91,8 +95,9 @@ streamlit run app.py
 It runs without a GPU. Choose a genre and a resolution, draw new paintings, replay a seed, morph one painting into
 another, and download the results. The four generators are in `models/`.
 
-The root `requirements.txt` only lists what the application needs (PyTorch for CPU), so the repository can be
-deployed as is on [Streamlit Community Cloud](https://streamlit.io/cloud): entry point `app.py`, Python 3.12.
+The online version is hosted on [Streamlit Community Cloud](https://streamlit.io/cloud), straight from this
+repository: entry point `app.py`, and the root `requirements.txt`, which only lists what the application needs
+(PyTorch for CPU).
 
 ## Repository layout
 
