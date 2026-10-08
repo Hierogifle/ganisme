@@ -84,14 +84,15 @@ final 64×80 model.*
 ![Streamlit application](docs/images/app.jpg)
 
 ```bash
-pip install -r requirements-app.txt
+pip install -r requirements.txt
 streamlit run app.py
 ```
 
 It runs without a GPU. Choose a genre and a resolution, draw new paintings, replay a seed, morph one painting into
 another, and download the results. The four generators are in `models/`.
 
-The application has only been run locally so far; it is not deployed online.
+The root `requirements.txt` only lists what the application needs (PyTorch for CPU), so the repository can be
+deployed as is on [Streamlit Community Cloud](https://streamlit.io/cloud): entry point `app.py`, Python 3.12.
 
 ## Repository layout
 
@@ -119,17 +120,18 @@ The application has only been run locally so far; it is not deployed online.
 | `runs/` | configuration, training curves and scores of every run (checkpoints are not versioned) |
 | `reports/metrics/`, `reports/optuna/` | result tables |
 | `docs/reponse-question.md` | literature review (in French) |
+| `docs/conclusion.md` | conclusion: results, difficulties, limits, next steps (in French) |
 | `data/` | not versioned, see [`data/README.md`](data/README.md) |
 
 ## Reproducing the work
 
 Requirements: Python 3.12, [uv](https://docs.astral.sh/uv/), a CUDA GPU (developed on an RTX 5060, 8 GB).
-`requirements.txt` pins PyTorch built for CUDA 12.8; change the index URL for another setup. The
+`requirements-train.txt` pins PyTorch built for CUDA 12.8; change the index URL for another setup. The
 `--index-strategy` option lets uv take the other packages from PyPI.
 
 ```bash
 uv venv
-uv pip install --index-strategy unsafe-best-match -r requirements.txt
+uv pip install --index-strategy unsafe-best-match -r requirements-train.txt
 ```
 
 Then, with the environment activated and the data rebuilt as explained in [`data/README.md`](data/README.md):

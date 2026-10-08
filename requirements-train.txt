@@ -1,0 +1,24 @@
+# Full environment: training, notebooks and application.
+# PyTorch built for CUDA 12.8 (required for RTX 50xx GPUs).
+# Install with uv (the option is needed: without it, uv only looks for numpy and pillow on the PyTorch index):
+#   uv venv && uv pip install --index-strategy unsafe-best-match -r requirements-train.txt
+--extra-index-url https://download.pytorch.org/whl/cu128
+ipykernel==7.3.0
+matplotlib==3.11.2
+nbconvert==7.17.1
+nbformat==5.11.1
+numpy==2.5.3
+openpyxl==3.1.5
+optuna==5.0.0
+pandas==3.0.6
+pillow==12.3.0
+requests==2.34.2
+scikit-learn==1.9.1
+scipy==1.18.1
+seaborn==0.13.2
+streamlit==1.65.0
+torch==2.11.0+cu128
+torch-fidelity==0.4.0
+torchvision==0.26.0+cu128
+tqdm==4.70.1
+wordcloud==1.9.6

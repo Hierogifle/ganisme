@@ -1,4 +1,4 @@
-# Apparence de l'application : tons de galerie, texte sombre sur fond clair.
+# Look of the application: gallery tones, dark text on a light background.
 [theme]
 base = "light"
 primaryColor = "#7a4b24"

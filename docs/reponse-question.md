@@ -234,10 +234,11 @@ Les performances s'évaluent selon deux critères complémentaires :
 
 | Métrique | Principe | Interprétation |
 |---|---|---|
-| **FID** (Fréchet Inception Distance) | Extrait les caractéristiques des images réelles et générées via Inception-v3, puis compare la distance statistique entre les deux distributions (gaussiennes multivariées) | **Plus bas = meilleur.** Métrique de référence. Capture fidélité *et* diversité. Sensible à la taille de l'échantillon (≥ 10 000 images recommandées) |
-| **IS** (Inception Score) | Vérifie que chaque image contient un objet clairement identifiable (fidélité) et que l'ensemble couvre un large éventail de catégories (diversité) | **Plus haut = meilleur.** Limite : ne compare jamais aux vraies images, et n'est pertinent que sur des domaines proches d'ImageNet |
-| **KID** (Kernel Inception Distance) | Variante du FID sans hypothèse gaussienne | **Plus bas = meilleur.** Moins biaisé sur de petits échantillons |
+| **FID** (Fréchet Inception Distance) | Extrait les caractéristiques des images réelles et générées via Inception-v3, puis compare la distance statistique entre les deux distributions (gaussiennes multivariées) | **Plus bas = meilleur.** Métrique de référence. Capture fidélité *et* diversité. Sensible au nombre d'images utilisé pour le calculer (≥ 10 000 recommandées) : un FID ne se lit qu'avec son effectif (réserve 2) |
+| **IS** (Inception Score) | Vérifie que chaque image contient un objet clairement identifiable (fidélité) et que l'ensemble couvre un large éventail de catégories (diversité) | **Plus haut = meilleur.** Limite : ne compare jamais aux vraies images, et n'est pertinent que sur des domaines proches d'ImageNet (réserve 1) |
+| **KID** (Kernel Inception Distance) | Variante du FID sans hypothèse gaussienne | **Plus bas = meilleur.** Estimateur sans biais : sa valeur ne dépend pas du nombre d'images. En contrepartie, il repère mal le mode collapse (réserve 3) |
 | **Precision / Recall pour GAN** | Deux scores séparés pour diagnostiquer : la **précision** mesure le pourcentage d'images générées qui ressemblent à de vraies images (fidélité) ; le **rappel** mesure la capacité à couvrir toute la variété du jeu réel (diversité) | Permet de distinguer « images belles mais peu variées » de « images variées mais ratées » — ce que le FID seul confond |
+| **Densité / Couverture** | Variantes plus robustes de la précision et du rappel : la densité compte combien de vraies images entourent chaque image générée, la couverture mesure la part des vraies images qui ont une image générée dans leur voisinage | Moins sensibles aux images aberrantes que précision et rappel |
 
 ### 2. Évaluation humaine
 
@@ -254,6 +255,31 @@ Ces approches vérifient le comportement interne du modèle et détectent les an
 - **Détection du mode collapse** : phénomène où le générateur produit continuellement les mêmes images ou un nombre très restreint de variantes. On le repère visuellement, en calculant la similarité structurelle (SSIM) entre images générées, ou via un **rappel** effondré.
 - **Recherche des plus proches voisins** : on prend une image générée et on cherche la plus similaire dans le jeu d'entraînement. Si elles sont identiques, le GAN fait du **surapprentissage** et plagie les données réelles au lieu d'en inventer de nouvelles.
 - **Grille d'échantillons à `z` fixé** : on conserve un même lot de vecteurs latents tout au long de l'entraînement et on génère l'image correspondante à chaque époque. Cela donne un suivi visuel direct de la progression.
+
+### 4. Trois réserves, vérifiées sur mes propres données
+
+La littérature présente ces métriques comme des outils prêts à l'emploi. Avant d'entraîner le moindre modèle, je les ai donc mises à l'épreuve sur des **faux générateurs** dont je connais le défaut à l'avance : des lots d'images fabriqués à partir des vraies peintures (copie, flou, bruit, 20 images répétées). Une métrique fiable doit les classer dans l'ordre attendu.
+
+Mesures sur les portraits en 64×80, 3 448 images par lot (`notebooks/03_datasets_and_metrics.ipynb`) :
+
+| Faux générateur | FID | KID ×1000 | IS | Précision | Rappel |
+|---|---|---|---|---|---|
+| Copie du jeu d'entraînement | 0,0 | −0,2 | 4,49 | 1,00 | 1,00 |
+| Flou léger | 61,2 | 56,6 | 4,55 | 0,68 | 0,71 |
+| Bruit ajouté (σ = 25) | 113,9 | 121,3 | 4,39 | 0,14 | 0,24 |
+| Mode collapse (20 images répétées) | 196,3 | **15,8** | 3,69 | 1,00 | **0,01** |
+| Flou fort | 203,4 | 214,0 | 3,43 | 0,03 | 0,02 |
+| Bruit pur | 485,6 | 637,7 | 1,09 | 0,00 | 0,00 |
+
+Trois réserves en découlent.
+
+**Réserve 1 — L'Inception Score ne fonctionne pas sur de la peinture.** Il attribue 4,49 à de vraies peintures, 4,55 aux mêmes peintures floutées et 4,39 aux mêmes peintures bruitées : trois valeurs que leur écart-type (environ 0,2) ne permet pas de distinguer, et le flou passe devant le réel. L'explication tient à sa construction : il s'appuie sur les 1 000 classes d'ImageNet (chiens, voitures, objets du quotidien), dans lesquelles un portrait du XVIIᵉ siècle ne se range pas, et il ne compare jamais les images générées aux images réelles. Je le calcule, mais je ne m'en sers dans aucune décision.
+
+**Réserve 2 — Un FID n'a de sens qu'accompagné de son nombre d'images.** L'estimateur du FID est biaisé : moins il y a d'images, plus la valeur est élevée, même pour des images parfaites. Je l'ai mesuré directement : le même lot de vraies peintures obtient un FID de **0** sur 3 448 images et de **49** sur un tirage de 384. Deux FID ne se comparent donc qu'à effectif égal (et à genre et résolution identiques). Conséquence concrète pour mon modèle final : son FID est de 54,5 sur 3 448 images, alors que de vraies peintures jamais vues obtiennent 57,6 sur 384 images. Ces deux chiffres ne se comparent pas. À effectif égal (384 images), le modèle est à 97,5 contre 57,6 pour le réel. C'est pourquoi je rapporte toujours deux valeurs : le FID complet et le FID recalculé à l'effectif du jeu de test (`FID_ntest`).
+
+**Réserve 3 — Le KID est sans biais, mais il repère mal le mode collapse.** Son avantage annoncé est réel : il vaut environ 0 pour de vraies peintures, quel que soit le nombre d'images. En revanche, un générateur réduit à 20 images répétées obtient un KID de 15,8, meilleur que le flou léger (56,6) et même que mon modèle final (37,3). Le FID, lui, le sanctionne (196) et le rappel tombe à 0,01. Le KID ne peut donc pas servir seul : je le lis toujours avec le rappel et la couverture.
+
+**Ce que j'en ai retenu pour le projet** : le FID comme critère principal, toujours à effectif précisé ; la précision et le rappel pour savoir *pourquoi* un FID est bon ou mauvais ; un test de mémorisation en complément, car une copie du jeu d'entraînement obtient des scores parfaits partout ailleurs.
 
 ---
 
@@ -549,6 +575,11 @@ Cette puissance a un coût. Une machine capable de produire du vrai-semblable à
 - Zhu et al., *Unpaired Image-to-Image Translation using Cycle-Consistent Adversarial Networks* (CycleGAN), 2017
 - Karras et al., *A Style-Based Generator Architecture for GANs* (StyleGAN), 2018 ; *Training GANs with Limited Data* (ADA), 2020
 - Heusel et al., *GANs Trained by a Two Time-Scale Update Rule Converge to a Local Nash Equilibrium* (FID), 2017
+- Salimans et al., *Improved Techniques for Training GANs* (Inception Score), 2016
+- Bińkowski et al., *Demystifying MMD GANs* (KID), 2018
+- Kynkäänniemi et al., *Improved Precision and Recall Metric for Assessing Generative Models*, 2019
+- Naeem et al., *Reliable Fidelity and Diversity Metrics for Generative Models* (densité, couverture), 2020
+- Chong & Forsyth, *Effectively Unbiased FID and Inception Score and Where to Find Them*, 2020
 - Vaswani et al., *Attention Is All You Need*, 2017
 - Goodfellow, *NIPS 2016 Tutorial: Generative Adversarial Networks*
 

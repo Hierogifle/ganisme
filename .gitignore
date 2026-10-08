@@ -1,30 +1,30 @@
-# --- Environnement et caches -------------------------------------------------
+# --- Environment and caches --------------------------------------------------
 .venv/
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
 .claude/
 
-# --- Données : non redistribuées ---------------------------------------------
-# Les images appartiennent à la Web Gallery of Art ; le catalogue est fourni par l'école.
-# On ne versionne que la notice et la liste des peintures retenues (voir data/README.md).
+# --- Data: not redistributed -------------------------------------------------
+# The images belong to the Web Gallery of Art; the catalogue is provided by the school.
+# Only the notice and the list of selected paintings are versioned (see data/README.md).
 data/**
 !data/**/
 !data/README.md
 !data/datasets/summary.json
 !data/datasets/*/metadata.csv
 
-# --- Entraînements : seuls les fichiers légers sont versionnés -----------------
-# (configuration, courbes, scores). Les checkpoints (1,5 Go) et les grilles d'images restent en local ;
-# les générateurs retenus sont dans models/.
+# --- Training runs: only the light files are versioned ------------------------
+# (configuration, curves, scores). Checkpoints (1.5 GB) and image grids stay local;
+# the selected generators are in models/.
 runs/**
 !runs/**/
 !runs/**/config.json
 !runs/**/eval.csv
 !runs/**/history.csv
 
-# --- Sorties régénérables ----------------------------------------------------
-# Les figures (105 Mo) sont reproduites par les notebooks, qui les contiennent déjà.
+# --- Outputs that can be regenerated ------------------------------------------
+# The figures (105 MB) are reproduced by the notebooks, which already embed them.
 reports/figures/
 reports/optuna/*.db
 reports/optuna/*.log
@@ -32,12 +32,12 @@ outputs/
 *.part
 *.tmp
 
-# --- Supports de cours de l'école (non redistribués) ---------------------------
+# --- Course material from the school (not redistributed) ----------------------
 docs/GANisme.docx.pdf
 docs/HowTo_TraitementImages_GAN_M2.pdf
 
-# --- Notes de travail personnelles -------------------------------------------
-# Retirer ces lignes pour les publier.
+# --- Personal working notes ---------------------------------------------------
+# Remove these lines to publish them.
 docs/how-to-1609.md
 docs/suivi-projet.md
 docs/cahier-des-charges-presentation.md
