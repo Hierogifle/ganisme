@@ -26,7 +26,7 @@ dans une application.
 |---|---|---|---|---|---|
 | Portraits | 64×80 | 54,5 | 0,62 | 0,28 | 0,0 % |
 | Portraits | 128×160 | 71,1 | 0,66 | 0,10 | 0,0 % |
-| Paysages | 64×48 | 42,3 | 0,86 | 0,20 | 0,2 % |
+| Paysages | 64×48 | 42,3 | 0,86 | 0,20 | 0,1 % |
 | Paysages | 128×96 | 61,9 | 0,87 | 0,07 | 0,0 % |
 
 Chaque ligne a sa propre échelle : deux FID ne se comparent qu'à genre, résolution et nombre d'images identiques.
@@ -55,7 +55,7 @@ l'entraînement plus régulier d'une graine à l'autre.
 
 **4. Les modèles ne recopient pas leurs données.** Les images générées sont à peu près à la même distance du jeu
 d'entraînement qu'une vraie peinture jamais vue (rapport de 0,96 à 1,11 selon le modèle ; une copie donnerait 0), et
-la part d'images suspectes de copie reste entre 0 et 0,2 %.
+la part d'images suspectes de copie reste entre 0 et 0,1 %.
 
 ---
 

@@ -24,7 +24,8 @@ the whole chain:
 4. building the training sets;
 5. designing an evaluation protocol;
 6. training and comparing models, then tuning hyperparameters;
-7. a Streamlit application.
+7. a Streamlit application, [available online](https://ganisme-romu.streamlit.app);
+8. a conclusion and an interactive presentation of the work.
 
 ## Results
 
@@ -99,11 +100,33 @@ The online version is hosted on [Streamlit Community Cloud](https://streamlit.io
 repository: entry point `app.py`, and the root `requirements.txt`, which only lists what the application needs
 (PyTorch for CPU).
 
+## The presentation
+
+The defence of the project is an interactive page (in French) rather than a slide deck: each part of the talk is a
+room of a museum, and the charts are built from the project's own results (reference scale of the metrics, scores
+of the discriminator, Optuna study, training progression, latent interpolation, live application).
+
+Open `presentation/index.html` in a browser (no server needed; only the live demonstration uses the network) and
+choose the **15-minute** or the **30-minute** version. In the short version, the screens left out of the talk stay
+available as backup screens.
+
+| Key | Action |
+|---|---|
+| `→` or space, `←` | next step or screen, previous one |
+| `M` | map of all the screens |
+| `R`, `B` | backup screens for questions, back to the talk |
+| `F`, `T` | full screen, timer |
+
+`python presentation/build_assets.py` regenerates its images and data from the exported generators, the training
+logs and the result tables (nothing is trained).
+
 ## Repository layout
 
 | Path | Purpose |
 |---|---|
-| `app.py` | Streamlit application |
+| `app.py`, `.streamlit/` | Streamlit application and its theme |
+| `requirements.txt` | dependencies of the application only (PyTorch for CPU) |
+| `requirements-train.txt` | full environment: training, notebooks, application (PyTorch for CUDA) |
 | `models/` | the four exported generators (`.pt`) and their description (`models.json`) |
 | `notebooks/01_eda_art_catalog.ipynb` | exploratory analysis of the catalogue |
 | `notebooks/02_image_visualization.ipynb` | looking at the images, consequences for preprocessing |
@@ -124,10 +147,11 @@ repository: entry point `app.py`, and the root `requirements.txt`, which only li
 | `src/generate.py`, `src/export_models.py` | image generation, export of the generators |
 | `runs/` | configuration, training curves and scores of every run (checkpoints are not versioned) |
 | `reports/metrics/`, `reports/optuna/` | result tables |
-| `docs/reponse-question.md` | literature review (in French) |
+| `docs/reponse-question.md` | literature review, 15 questions (in French); the `.pdf` next to it is an earlier export |
 | `docs/conclusion.md` | conclusion: results, difficulties, limits, next steps (in French) |
-| `presentation/` | interactive presentation of the project (in French): open `presentation/index.html` in a browser; `build_assets.py` regenerates its images and data |
-| `data/` | not versioned, see [`data/README.md`](data/README.md) |
+| `presentation/` | interactive presentation (in French), see above |
+| `docs/images/` | images of this README |
+| `data/` | the images are not versioned, only the list of the selected paintings; see [`data/README.md`](data/README.md) |
 
 ## Reproducing the work
 
@@ -148,11 +172,11 @@ python src/train.py --help            # one training run
 python src/optuna_search.py           # hyperparameter study (about 7.5 hours)
 python src/confirm_best.py            # confirmation on three seeds (about 4 hours)
 python src/run_portrait_128.py        # portraits in 128×160 (about 4 hours)
-python src/run_landscape.py           # landscapes (about 2 hours)
+python src/run_landscape.py           # landscapes (about 3.5 hours)
 python src/export_models.py           # export the generators to models/
 ```
 
-A training run takes about 40 minutes at 64 pixels and up to 2.5 hours at 128 pixels. Long runs can be
+A training run takes 25 to 45 minutes at 64 pixels and about 2.5 hours at 128 pixels. Long runs can be
 interrupted and resumed: the same command picks up where it stopped.
 
 Training is not bit-for-bit reproducible (GPU non-determinism), and the training loop was changed after the three
@@ -167,11 +191,14 @@ first models: re-running them would not give exactly the same numbers.
 - **Few repetitions**: except for the 64×80 portrait setting, each model was trained once.
 - **Training had not fully converged** at 600 epochs for several models.
 - No hyperparameter search was run specifically for 128 pixels or for landscapes.
+- **Indirect measures**: every metric relies on Inception-v3, a network trained on photographs; no human
+  evaluation was carried out.
 
 ## Credits
 
-- Images and catalogue: [Web Gallery of Art](https://www.wga.hu). The images are used for this educational project
-  and are not redistributed here.
+- Images and catalogue: [Web Gallery of Art](https://www.wga.hu). The images are used for this educational project.
+  The image dataset is not redistributed here: only a few reproductions appear in the figures of the notebooks and
+  in the presentation, and `data/README.md` explains how to rebuild everything from the source.
 - Main references: Goodfellow et al. 2014 (GAN), Radford et al. 2015 (DCGAN), Heusel et al. 2017 (FID),
   Miyato et al. 2018 (spectral normalisation), Kynkäänniemi et al. 2019 (precision and recall),
   Zhao et al. 2020 (DiffAugment), Akiba et al. 2019 (Optuna).

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GANisme — le portrait disparu</title>
-<link rel="stylesheet" href="css/style.css?v=5">
+<link rel="stylesheet" href="css/style.css?v=10">
 </head>
 <body>
 <div id="viewport">
@@ -20,6 +20,7 @@
         <h1>GANisme</h1>
         <p class="lede">Un portrait a disparu du musée. Peut-on en peindre un autre sans que personne le remarque&nbsp;?</p>
         <p class="wall-note">Romuald Courtois — générer des peintures avec un réseau antagoniste génératif (GAN)</p>
+        <p class="wall-note" id="mode-switch"></p>
       </div>
       <div class="col center">
         <div class="frame"><div class="empty-frame canvas">?</div></div>
@@ -58,7 +59,7 @@
     <p class="wall-note step" data-step="1" style="margin-top:auto">Les quatre faux sont choisis parmi les plus réussis du modèle. La suite montre ce qu'il produit en moyenne, et comment je le mesure.</p>
   </section>
 
-  <section class="slide" data-room="prologue" data-title="La mission et le plan de la visite">
+  <section class="slide" data-room="prologue" data-title="La mission et le plan de la visite" data-in="long">
     <h2>La mission, et le plan de la visite</h2>
     <p class="lede">Le sujet : entraîner un GAN à générer des peintures à partir du catalogue de la Web Gallery of Art, sans aucune description en entrée.</p>
     <div class="rooms fill" style="align-content:center">
@@ -112,7 +113,52 @@
     <div class="talks"><p class="talk step" data-who="curator">Tant que je vois la différence, vous recommencez.</p></div>
   </section>
 
-  <section class="slide" data-room="plan" data-title="Le GAN parmi les modèles génératifs">
+  <section class="slide" data-room="plan" data-title="Un équilibre fragile, et un choix : DCGAN" data-in="short">
+    <h2>Un équilibre fragile, et un choix : DCGAN</h2>
+    <div class="row">
+      <div class="cartel grow tight step" data-step="1">
+        <p class="eyebrow">Discriminateur trop fort</p>
+        <h3>Le Conservateur trop sévère</h3>
+        <p>D rejette tout : le Faussaire ne reçoit plus de critique utile.</p>
+      </div>
+      <div class="cartel grow tight step" data-step="1">
+        <p class="eyebrow">Mode collapse</p>
+        <h3>Vingt fois le même tableau</h3>
+        <p>Une image passe, G la répète : la diversité disparaît.</p>
+      </div>
+      <div class="cartel grow tight step" data-step="1">
+        <p class="eyebrow">Mémorisation</p>
+        <h3>Le tableau décroché du mur d'à côté</h3>
+        <p>Avec 3 448 portraits seulement, G peut finir par recopier.</p>
+      </div>
+    </div>
+    <div class="row fill">
+      <div class="cartel grow tight step" data-step="2">
+        <p class="eyebrow">Les variantes</p>
+        <table>
+          <tbody>
+            <tr><td>cGAN</td><td>une étiquette donnée à G et à D : générer une classe à la demande</td></tr>
+            <tr class="hl"><td>DCGAN</td><td>des convolutions à la place des couches denses : base de ce projet</td></tr>
+            <tr><td>WGAN-GP</td><td>une autre mesure de distance, pour un entraînement plus stable</td></tr>
+            <tr><td>CycleGAN</td><td>traduire une image d'un style à l'autre, sans paires</td></tr>
+            <tr><td>StyleGAN</td><td>le style contrôlé à chaque échelle : visages en haute résolution</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="cartel w35 tight step" data-step="2">
+        <p class="eyebrow">Pourquoi DCGAN</p>
+        <ul>
+          <li>Simple, explicable couche par couche.</li>
+          <li>Moins d'une demi-heure par entraînement sur un portable.</li>
+          <li>Sert d'étalon : chaque ajout est mesuré séparément.</li>
+        </ul>
+        <p class="small">Les 15 questions de la veille (familles de modèles, dangers, intérêt) sont dans le document écrit et dans les réserves.</p>
+      </div>
+    </div>
+    <div class="talks"><p class="talk step" data-step="3" data-who="inspector">Trois façons d'échouer, et les pertes ne disent rien. C'est pour cela que vous aurez affaire à moi.</p></div>
+  </section>
+
+  <section class="slide" data-room="plan" data-title="Le GAN parmi les modèles génératifs" data-in="long">
     <h2>Une famille à part parmi les modèles génératifs</h2>
     <div class="row fill">
       <div class="cartel grow">
@@ -135,7 +181,7 @@
     </div>
   </section>
 
-  <section class="slide" data-room="plan" data-title="Un équilibre difficile à tenir">
+  <section class="slide" data-room="plan" data-title="Un équilibre difficile à tenir" data-in="long">
     <h2>Un équilibre difficile à tenir</h2>
     <div class="row">
       <div class="cartel grow step">
@@ -163,7 +209,7 @@
     <div class="talks"><p class="talk step" data-who="inspector">C'est pour cela que vous aurez affaire à moi.</p></div>
   </section>
 
-  <section class="slide" data-room="plan" data-title="Les variantes, et celle retenue">
+  <section class="slide" data-room="plan" data-title="Les variantes, et celle retenue" data-in="long">
     <h2>Les variantes, et celle que j'ai retenue</h2>
     <div class="row fill">
       <div class="cartel grow">
@@ -191,7 +237,7 @@
     </div>
   </section>
 
-  <section class="slide" data-room="plan" data-title="Pourquoi générer, et à quel prix ?">
+  <section class="slide" data-room="plan" data-title="Pourquoi générer, et à quel prix ?" data-in="long">
     <h2>Pourquoi générer, et à quel prix&nbsp;?</h2>
     <div class="row fill" style="align-items:flex-start">
       <div class="cartel grow">
@@ -218,7 +264,61 @@
   </section>
 
   <!-- =====================================================================  ROOM 2 — EXPLORATORY ANALYSIS -->
-  <section class="slide" data-room="archives" data-title="Le catalogue du musée">
+  <section class="slide" data-room="archives" data-title="Le catalogue : propre en apparence seulement" data-in="short">
+    <h2>Le catalogue du musée : propre en apparence seulement</h2>
+    <div class="row fill">
+      <div class="cartel w35">
+        <p class="eyebrow">Web Gallery of Art</p>
+        <div class="stats">
+          <div class="big-number">52 867<small>œuvres, 11 colonnes</small></div>
+          <div class="big-number">32 438<small>peintures (61&nbsp;%)</small></div>
+        </div>
+        <ul>
+          <li>3 663 peintres, 26 écoles, 10 genres.</li>
+          <li>Aucune image dans le fichier : seulement des liens.</li>
+        </ul>
+      </div>
+      <div class="cartel grow">
+        <table>
+          <thead><tr><th>Ce que j'ai trouvé</th><th>Exemple</th><th>Ce que j'ai fait</th></tr></thead>
+          <tbody>
+            <tr><td>Aucune valeur manquante… en apparence</td><td>4 800 dates notées «&nbsp;-&nbsp;» (9&nbsp;%)</td><td>converties en valeurs manquantes</td></tr>
+            <tr><td>Erreurs de saisie</td><td><code>162628</code> pour 1626-28</td><td>corrigées, texte d'origine conservé</td></tr>
+            <tr><td>Peintures qui n'en sont pas</td><td>154 «&nbsp;peintures&nbsp;» en marbre, bronze ou photo</td><td>repérées par la technique</td></tr>
+            <tr><td>Information cachée dans le texte</td><td>«&nbsp;Oil on canvas, 81 x 65 cm&nbsp;»</td><td>technique et dimensions extraites : le format de chaque tableau</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="talks"><p class="talk" data-who="curator">Tout est dans le registre. Enfin… presque tout.</p></div>
+  </section>
+
+  <section class="slide" data-room="archives" data-title="Un corpus biaisé, et deux pièges" data-in="short">
+    <h2>Un corpus biaisé, et deux pièges pour un GAN</h2>
+    <div class="row fill">
+      <div class="col grow">
+        <div class="figure fill" data-fig="04_paintings_type" data-alt="Nombre de peintures par genre"></div>
+        <div class="figure fill" data-fig="img_05_details_giotto" data-alt="Plusieurs détails d'une même fresque de Giotto"></div>
+      </div>
+      <div class="col w40">
+        <div class="cartel tight">
+          <p class="eyebrow">Le biais</p>
+          <p>Religieux 42&nbsp;%, portrait 15&nbsp;%, paysage 13&nbsp;% ; école italienne 42&nbsp;% ; 65&nbsp;% des XVᵉ-XVIIᵉ siècles.</p>
+          <p><strong>Décision : un modèle par genre</strong>, en commençant par les portraits.</p>
+        </div>
+        <div class="cartel tight">
+          <p class="eyebrow">Piège n°1 · les quasi-doublons</p>
+          <p><strong>18&nbsp;%</strong> des peintures sont des détails d'une même œuvre. Vue plusieurs fois, elle serait recopiée : je les retire.</p>
+        </div>
+        <div class="cartel tight">
+          <p class="eyebrow">Piège n°2 · les formats</p>
+          <p>Seulement <strong>4&nbsp;% de tableaux carrés</strong> : le recadrage carré habituel perdrait 24&nbsp;% de la surface.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-room="archives" data-title="Le catalogue du musée" data-in="long">
     <h2>Le catalogue du musée</h2>
     <div class="row fill">
       <div class="cartel w35">
@@ -238,7 +338,7 @@
     <div class="talks"><p class="talk" data-who="curator">Tout est dans le registre. Enfin… presque tout.</p></div>
   </section>
 
-  <section class="slide" data-room="archives" data-title="Des données propres en apparence seulement">
+  <section class="slide" data-room="archives" data-title="Des données propres en apparence seulement" data-in="long">
     <h2>Propre en apparence seulement</h2>
     <div class="row fill">
       <div class="cartel grow">
@@ -262,7 +362,7 @@
     </div>
   </section>
 
-  <section class="slide" data-room="archives" data-title="Un corpus très biaisé">
+  <section class="slide" data-room="archives" data-title="Un corpus très biaisé" data-in="long">
     <h2>Un corpus très biaisé</h2>
     <div class="row fill">
       <div class="col grow">
@@ -282,7 +382,7 @@
     </div>
   </section>
 
-  <section class="slide" data-room="archives" data-title="Deux pièges pour un GAN">
+  <section class="slide" data-room="archives" data-title="Deux pièges pour un GAN" data-in="long">
     <h2>Deux pièges pour un GAN</h2>
     <div class="row fill">
       <div class="col grow">
@@ -305,7 +405,7 @@
   </section>
 
   <!-- =====================================================================  ROOM 3 — FROM IMAGES TO DATASET -->
-  <section class="slide" data-room="workshop" data-title="Regarder les 32 437 images">
+  <section class="slide" data-room="workshop" data-title="Regarder les 32 437 images" data-in="long">
     <h2>Regarder les 32 437 images</h2>
     <div class="row fill">
       <div class="col grow">
@@ -335,7 +435,34 @@
     <div class="talks"><p class="talk right step" data-step="1" data-who="forger">Il me reste 3 448 portraits pour apprendre. C'est peu.</p></div>
   </section>
 
-  <section class="slide" data-room="workshop" data-title="Un format par genre">
+  <section class="slide" data-room="workshop" data-title="Un format par genre, une augmentation adaptée" data-in="short">
+    <h2>Un format par genre, une augmentation adaptée</h2>
+    <div class="row fill">
+      <div class="figure fill" data-fig="ds_03_crop_examples" data-alt="Exemples de recadrage au format du genre"></div>
+      <div class="col w40">
+        <div class="cartel tight">
+          <p class="eyebrow">Surface perdue au recadrage</p>
+          <table>
+            <tbody>
+              <tr><td>Carré centré</td><td class="n">25&nbsp;%</td></tr>
+              <tr class="hl"><td>Portraits en 4:5 (64×80, 128×160)</td><td class="n">4,9&nbsp;%</td></tr>
+              <tr class="hl"><td>Paysages en 4:3 (64×48, 128×96)</td><td class="n">7,1&nbsp;%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="cartel tight">
+          <p class="eyebrow">Le jeu final</p>
+          <p><strong>3 448</strong> portraits d'entraînement, <strong>384</strong> de test jamais montrés. Pas de validation : dans un GAN, le suivi se fait au FID.</p>
+        </div>
+        <div class="cartel tight">
+          <p class="eyebrow">L'augmentation</p>
+          <p>Miroir horizontal, et <strong>DiffAugment</strong> : couleur et translation appliquées aux vraies <em>et</em> aux fausses images, pour que le Faussaire ne les recopie pas.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-room="workshop" data-title="Un format par genre" data-in="long">
     <h2>Un format par genre, pas un carré</h2>
     <div class="row fill">
       <div class="figure fill" data-fig="ds_03_crop_examples" data-alt="Exemples de recadrage au format du genre"></div>
@@ -354,7 +481,7 @@
     </div>
   </section>
 
-  <section class="slide" data-room="workshop" data-title="Le jeu d'entraînement et l'augmentation">
+  <section class="slide" data-room="workshop" data-title="Le jeu d'entraînement et l'augmentation" data-in="long">
     <h2>Le jeu d'entraînement, et l'augmentation</h2>
     <div class="figure" data-fig="ds_04_final_samples" data-alt="Échantillon du jeu d'entraînement des portraits" style="height:240px"></div>
     <div class="row fill">
@@ -378,7 +505,46 @@
   </section>
 
   <!-- =====================================================================  ROOM 4 — METRICS -->
-  <section class="slide" data-room="inspector" data-title="L'Inspecteur ne regarde pas les pixels">
+  <section class="slide" data-room="inspector" data-title="L'Inspecteur compare deux collections" data-in="short">
+    <h2>L'Inspecteur compare deux collections</h2>
+    <div class="diagram" style="margin:8px 0">
+      <div class="col" style="gap:10px">
+        <div class="node ghost"><b>3 448</b>vraies peintures</div>
+        <div class="node"><b>3 448</b>peintures générées</div>
+      </div>
+      <div class="arrow"></div>
+      <div class="node net"><b>Inception-v3</b>réseau déjà entraîné,<br>utilisé comme instrument</div>
+      <div class="arrow"></div>
+      <div class="node"><b>2 048 nombres</b>par image</div>
+      <div class="arrow"></div>
+      <div class="node"><b>Deux nuages de points</b>que l'on compare</div>
+    </div>
+    <div class="row fill">
+      <div class="cartel grow tight">
+        <p class="eyebrow">Se ressemblent-elles&nbsp;?</p>
+        <h3>FID</h3>
+        <p>Distance entre les deux nuages. Plus bas = mieux. Mon critère principal.</p>
+      </div>
+      <div class="cartel grow tight">
+        <p class="eyebrow">Ont-elles l'air vraies&nbsp;?</p>
+        <h3>Précision</h3>
+        <p>Part des images générées proches d'une vraie peinture.</p>
+      </div>
+      <div class="cartel grow tight">
+        <p class="eyebrow">Toute la variété est-elle là&nbsp;?</p>
+        <h3>Rappel</h3>
+        <p>Part des vraies peintures qui ont une image générée proche.</p>
+      </div>
+      <div class="cartel grow tight">
+        <p class="eyebrow">A-t-il recopié&nbsp;?</p>
+        <h3>Mémorisation</h3>
+        <p>Distance au tableau d'entraînement le plus proche, comparée à celle d'un vrai tableau jamais vu.</p>
+      </div>
+    </div>
+    <div class="talks"><p class="talk" data-who="inspector">Je ne juge pas un tableau. Je compare deux collections, toujours avec le même protocole.</p></div>
+  </section>
+
+  <section class="slide" data-room="inspector" data-title="L'Inspecteur ne regarde pas les pixels" data-in="long">
     <h2>L'Inspecteur ne regarde pas les pixels</h2>
     <div class="diagram" style="margin:14px 0">
       <div class="col" style="gap:10px">
@@ -409,7 +575,7 @@
     <div class="talks"><p class="talk" data-who="inspector">Je ne juge pas un tableau. Je compare deux collections.</p></div>
   </section>
 
-  <section class="slide" data-room="inspector" data-title="Le FID, la précision et le rappel">
+  <section class="slide" data-room="inspector" data-title="Le FID, la précision et le rappel" data-in="long">
     <h2>Trois questions, trois mesures</h2>
     <div class="row fill">
       <div class="cartel grow">
@@ -441,7 +607,7 @@
     <div class="cartel fill" data-widget="scale" data-mode="fakes"></div>
   </section>
 
-  <section class="slide" data-room="inspector" data-title="Qualité ou diversité ?">
+  <section class="slide" data-room="inspector" data-title="Qualité ou diversité ?" data-in="long">
     <h2>Qualité ou diversité&nbsp;?</h2>
     <div class="row fill">
       <div class="cartel grow"><div class="chart" data-widget="prmap" data-mode="fakes"></div></div>
@@ -478,7 +644,7 @@
     </div>
   </section>
 
-  <section class="slide" data-room="inspector" data-title="A-t-il décroché un vrai tableau ?">
+  <section class="slide" data-room="inspector" data-title="A-t-il décroché un vrai tableau ?" data-in="long">
     <h2>A-t-il décroché un vrai tableau&nbsp;?</h2>
     <div class="figure" data-fig="confirm_04_nearest_neighbors" data-alt="Images générées et leur plus proche voisine dans le jeu d'entraînement" style="height:270px"></div>
     <div class="row fill">
@@ -539,9 +705,10 @@
   <section class="slide" data-room="attempts" data-title="Le duel, essai par essai" data-steps="2">
     <h2>Le duel, essai par essai</h2>
     <div class="cartel fill" data-widget="duel" data-models="model1,model2,model3"></div>
+    <div class="talks" data-in="short"><p class="talk right step" data-step="3" data-who="forger">Trop sévère, puis trop mou. On ne trouvera jamais le bon rythme à la main. — <em>Alors on répète. Trente fois.</em></p></div>
   </section>
 
-  <section class="slide" data-room="attempts" data-title="La leçon des trois essais">
+  <section class="slide" data-room="attempts" data-title="La leçon des trois essais" data-in="long">
     <h2>Trois réglages à la main, trois déséquilibres</h2>
     <div class="cartel">
       <table>
@@ -570,7 +737,40 @@
   </section>
 
   <!-- =====================================================================  ROOM 6 — OPTUNA AND FINAL MODELS -->
-  <section class="slide" data-room="rhythm" data-title="Trente répétitions : l'étude Optuna">
+  <section class="slide" data-room="rhythm" data-title="Trente répétitions, puis une confirmation" data-in="short">
+    <h2>Trente répétitions, puis une confirmation</h2>
+    <div class="row fill">
+      <div class="cartel grow">
+        <div class="chart" data-widget="optuna-trials"></div>
+        <div class="legend"><span><i class="dot" style="background:var(--neutral-mark)"></i>essai mené à terme</span>
+          <span><i class="dot" style="background:var(--ivory);box-shadow:0 0 0 2px var(--neutral-mark) inset"></i>essai arrêté tôt</span>
+          <span><i style="background:var(--series-1)"></i>meilleur résultat obtenu jusque-là</span></div>
+      </div>
+      <div class="col w35">
+        <div class="cartel tight">
+          <p class="eyebrow">L'étude Optuna</p>
+          <p>30 essais de 300 époques, 9 réglages explorés. Objectif : le FID moyen des 3 dernières évaluations, pour pénaliser les effondrements.</p>
+        </div>
+        <div class="cartel tight">
+          <p class="eyebrow">Ce qui compte, et le réglage retenu</p>
+          <table>
+            <tbody>
+              <tr><td>Taille de lot <span class="small">(52&nbsp;% de l'effet)</span></td><td class="n">64</td></tr>
+              <tr><td>Mises à jour de D pour 1 de G <span class="small">(22&nbsp;%)</span></td><td class="n">2</td></tr>
+              <tr><td>Adam β₁ <span class="small">(11&nbsp;%)</span></td><td class="n">0</td></tr>
+              <tr><td>Discriminateur</td><td class="n">normalisation spectrale</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="cartel tight">
+          <p class="eyebrow">Confirmé sur 3 graines, 600 époques</p>
+          <p><strong>56,0 · 54,5 · 59,0</strong> — moyenne 56,5 ± 2,3. Un meilleur essai isolé peut être un coup de chance.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-room="rhythm" data-title="Trente répétitions : l'étude Optuna" data-in="long">
     <h2>Trente répétitions : l'étude Optuna</h2>
     <div class="row fill">
       <div class="cartel grow">
@@ -592,7 +792,7 @@
     </div>
   </section>
 
-  <section class="slide" data-room="rhythm" data-title="Ce qui compte vraiment">
+  <section class="slide" data-room="rhythm" data-title="Ce qui compte vraiment" data-in="long">
     <h2>Ce qui compte vraiment</h2>
     <div class="row fill">
       <div class="cartel grow" style="justify-content:center">
@@ -618,7 +818,7 @@
     </div>
   </section>
 
-  <section class="slide" data-room="rhythm" data-title="Confirmer avant d'annoncer">
+  <section class="slide" data-room="rhythm" data-title="Confirmer avant d'annoncer" data-in="long">
     <h2>Confirmer avant d'annoncer</h2>
     <div class="row fill">
       <div class="cartel grow"><div class="chart" data-widget="confirmation"></div></div>
@@ -653,10 +853,33 @@
   <section class="slide" data-room="rhythm" data-title="Le verdict de la balance" data-steps="1">
     <h2>Le verdict de la balance</h2>
     <div class="cartel fill" data-widget="scale" data-mode="all" data-reveal-at="1"></div>
+    <p class="wall-note step" data-step="1" data-in="short">Modèle final : précision 0,62 · rappel 0,28 · mémorisation 1,11 · 0&nbsp;% de copies. Un duel équilibré : D(x) ≈ 0,52 et D(G(z)) ≈ 0,49.</p>
     <div class="talks"><p class="talk step" data-step="1" data-who="inspector">54,5. Entre la copie parfaite et le flou léger. Je note.</p></div>
   </section>
 
-  <section class="slide" data-room="rhythm" data-title="Le modèle final">
+  <section class="slide" data-room="rhythm" data-title="Plus grand, et ailleurs" data-in="short">
+    <h2>Plus grand, et ailleurs : le réglage se transfère</h2>
+    <div class="row fill">
+      <div class="col grow center">
+        <div class="frame thin"><img src="assets/samples/portraits_128.jpg" alt="Seize portraits générés en 128×160, non triés" style="width:660px"></div>
+        <div class="cartel tight" style="width:674px">
+          <p class="eyebrow">Portraits en 128×160 · une couche de plus</p>
+          <p>Mesuré en 64×80 : FID <strong>54,5 → 41,1</strong>.</p>
+        </div>
+      </div>
+      <div class="col grow center">
+        <div class="frame thin"><img src="assets/samples/landscapes_128_uncurated.jpg" alt="Douze paysages générés en 128×96, non triés" style="width:660px"></div>
+        <div class="cartel tight" style="width:674px">
+          <p class="eyebrow">Paysages · mêmes hyperparamètres, sans nouvelle recherche</p>
+          <p>FID <strong>79,8 → 42,3</strong>, puis <strong>37,7</strong> en 128×96.</p>
+        </div>
+      </div>
+    </div>
+    <p class="wall-note">Images non triées. Chaque genre et chaque résolution a sa propre échelle ; ces modèles n'ont été entraînés que sur une graine.</p>
+    <div class="talks"><p class="talk" data-who="curator">Si le portrait ne convainc pas, nous dirons que c'était un paysage.</p></div>
+  </section>
+
+  <section class="slide" data-room="rhythm" data-title="Le modèle final" data-in="long">
     <h2>Le modèle final : un duel enfin équilibré</h2>
     <div class="row fill">
       <div class="cartel grow" data-widget="duel" data-models="final"></div>
@@ -679,7 +902,7 @@
     </div>
   </section>
 
-  <section class="slide" data-room="rhythm" data-title="Deux fois plus grand : 128×160">
+  <section class="slide" data-room="rhythm" data-title="Deux fois plus grand : 128×160" data-in="long">
     <h2>Deux fois plus grand : 128×160</h2>
     <div class="row fill">
       <div class="col grow center">
@@ -701,7 +924,7 @@
     </div>
   </section>
 
-  <section class="slide" data-room="rhythm" data-title="Et les paysages ?">
+  <section class="slide" data-room="rhythm" data-title="Et les paysages ?" data-in="long">
     <h2>Et les paysages&nbsp;?</h2>
     <div class="row fill">
       <div class="col grow center">
@@ -726,7 +949,7 @@
   </section>
 
   <!-- =====================================================================  ROOM 7 — DEMONSTRATION -->
-  <section class="slide" data-room="hanging" data-title="La métamorphose" data-steps="1">
+  <section class="slide" data-room="hanging" data-title="La métamorphose" data-in="long" data-steps="1">
     <h2>Un espace de peintures, pas une collection</h2>
     <p class="lede">Chaque tableau est un point d'un espace à 100 dimensions. En glissant d'un point à un autre, l'image se transforme sans rupture.</p>
     <div class="col fill center" data-widget="morph" style="gap:26px">
@@ -779,7 +1002,54 @@
     </div>
   </section>
 
-  <section class="slide" data-room="epilogue" data-title="Ce que l'enquête retient">
+  <section class="slide" data-room="epilogue" data-title="Le bilan de l'enquête" data-in="short">
+    <h2>Le bilan de l'enquête</h2>
+    <div class="row">
+      <div class="cartel grow tight">
+        <p class="eyebrow">L'équilibre avant l'architecture</p>
+        <div class="big-number sm">130 → 54,5</div>
+        <p class="small">FID, à architecture identique.</p>
+      </div>
+      <div class="cartel grow tight">
+        <p class="eyebrow">Un gain reproductible</p>
+        <div class="big-number sm">56,5 ± 2,3</div>
+        <p class="small">FID moyen sur 3 graines.</p>
+      </div>
+      <div class="cartel grow tight">
+        <p class="eyebrow">Un réglage qui se transfère</p>
+        <div class="big-number sm">79,8 → 42,3</div>
+        <p class="small">Paysages, sans nouvelle recherche.</p>
+      </div>
+      <div class="cartel grow tight">
+        <p class="eyebrow">Inventé, pas copié</p>
+        <div class="big-number sm">0 à 0,1&nbsp;%</div>
+        <p class="small">D'images suspectes de copie.</p>
+      </div>
+    </div>
+    <div class="row fill">
+      <div class="cartel grow">
+        <p class="eyebrow">Seul, mais traçable</p>
+        <ul>
+          <li>10 notebooks numérotés, un par étape ; modules réutilisables dans <code>src/</code>.</li>
+          <li>Chaque entraînement enregistre sa configuration, ses courbes et ses scores, et peut être repris après interruption.</li>
+          <li>Une idée par modèle ; confirmation sur 3 graines ; journal des erreurs.</li>
+          <li>Dépôt GitHub public, application en ligne.</li>
+        </ul>
+      </div>
+      <div class="cartel grow">
+        <p class="eyebrow">La suite</p>
+        <ul>
+          <li>Entraîner plus longtemps : les courbes descendaient encore.</li>
+          <li>Répéter les modèles 128 pixels et paysages sur plusieurs graines.</li>
+          <li>Une architecture plus récente pour les visages ; un GAN conditionnel sur le genre.</li>
+          <li>Une évaluation humaine, indépendante d'Inception.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="talks"><p class="talk right" data-who="forger">La prochaine fois, donnez-moi plus de 600 époques.</p></div>
+  </section>
+
+  <section class="slide" data-room="epilogue" data-title="Ce que l'enquête retient" data-in="long">
     <h2>Ce que l'enquête retient</h2>
     <div class="row">
       <div class="cartel grow">
@@ -801,14 +1071,14 @@
       </div>
       <div class="cartel grow">
         <p class="eyebrow">4 · Des images inventées, pas copiées</p>
-        <div class="big-number">0 à 0,2&nbsp;%<small>d'images suspectes de copie</small></div>
+        <div class="big-number">0 à 0,1&nbsp;%<small>d'images suspectes de copie</small></div>
         <p class="small">Rapport de mémorisation entre 0,96 et 1,11 pour les quatre modèles.</p>
       </div>
     </div>
     <p class="wall-note" style="margin-top:auto">Du catalogue brut de 52 867 œuvres à quatre générateurs évalués, avec leur application en ligne.</p>
   </section>
 
-  <section class="slide" data-room="epilogue" data-title="Organisation : seul, mais traçable">
+  <section class="slide" data-room="epilogue" data-title="Organisation : seul, mais traçable" data-in="long">
     <h2>Seul, mais traçable</h2>
     <p class="lede">Sans équipe, personne ne relit. La rigueur vient donc des garde-fous.</p>
     <div class="row">
@@ -826,7 +1096,7 @@
     </div>
   </section>
 
-  <section class="slide" data-room="epilogue" data-title="Enseignements et pistes">
+  <section class="slide" data-room="epilogue" data-title="Enseignements et pistes" data-in="long">
     <h2>Si c'était à refaire, et la suite</h2>
     <div class="row fill" style="align-items:flex-start">
       <div class="cartel grow">
@@ -872,21 +1142,30 @@
   <!-- =====================================================================  RESERVES (backup screens) -->
   <section class="slide" data-room="reserves" data-title="Sommaire des réserves">
     <h2>Les réserves</h2>
-    <p class="lede">Écrans de secours pour les questions. <kbd>B</kbd> ramène à l'écran quitté.</p>
-    <div class="rooms fill" style="align-content:center">
-      <button class="room" data-goto="res-lexicon"><b>Lexique</b><p>G, D, z, D(x), lot, époque, β₁…</p></button>
-      <button class="room" data-goto="res-params"><b>Paramètres du modèle final</b><p>valeur, origine et justification de chaque réglage</p></button>
-      <button class="room" data-goto="res-models"><b>Les quatre modèles</b><p>architecture et scores, portraits et paysages</p></button>
-      <button class="room" data-goto="res-fid"><b>«&nbsp;Meilleur que le réel&nbsp;»&nbsp;?</b><p>le piège du nombre d'images</p></button>
-      <button class="room" data-goto="res-metrics"><b>Toutes les métriques</b><p>calcul, lecture, angle mort</p></button>
-      <button class="room" data-goto="res-howto"><b>Écarts au guide du formateur</b><p>ce qui est suivi, ce qui ne l'est pas, pourquoi</p></button>
-      <button class="room" data-goto="res-data"><b>Effectifs et augmentation</b><p>du catalogue au jeu de test</p></button>
-      <button class="room" data-goto="res-why"><b>Pourquoi ces choix techniques&nbsp;?</b><p>normalisation spectrale, β₁ = 0, deux mises à jour de D</p></button>
-      <button class="room" data-goto="res-choices"><b>Choix stratégiques</b><p>alternative écartée, raison, preuve</p></button>
-      <button class="room" data-goto="res-optuna"><b>Optuna : effet de chaque réglage</b><p>objectif par valeur testée</p></button>
-      <button class="room" data-goto="res-neighbors"><b>Plus proches voisins</b><p>128 pixels et paysages</p></button>
-      <button class="room" data-goto="res-eda"><b>Catalogue : compléments</b><p>genres par siècle, liens entre variables</p></button>
-      <button class="room" data-goto="res-color"><b>Images : compléments</b><p>couleurs par siècle, image moyenne par genre</p></button>
+    <p class="lede">Écrans de secours pour les questions. <kbd>R</kbd> ramène à ce sommaire, <kbd>B</kbd> à l'écran quitté.</p>
+    <div class="rooms compact fill" style="align-content:center">
+      <button class="room" data-goto="res-lexicon"><span>Bases</span><b>Lexique</b><p>G, D, z, D(x), lot, époque, β₁…</p></button>
+      <button class="room" data-goto="res-veille-1"><span>Veille</span><b>Questions 1 à 8</b><p>le point à énoncer pour chacune</p></button>
+      <button class="room" data-goto="res-veille-2"><span>Veille</span><b>Questions 9 à 15</b><p>convergence, variantes, dangers</p></button>
+      <button class="room" data-goto="res-params"><span>Modèle</span><b>Paramètres du modèle final</b><p>valeur, origine, justification</p></button>
+      <button class="room" data-goto="res-models"><span>Modèle</span><b>Les quatre modèles</b><p>architecture et scores</p></button>
+      <button class="room" data-goto="res-final-images"><span>Modèle</span><b>Généré contre réel</b><p>modèle final, interpolations</p></button>
+      <button class="room" data-goto="res-fid"><span>Métriques</span><b>«&nbsp;Meilleur que le réel&nbsp;»&nbsp;?</b><p>le piège du nombre d'images</p></button>
+      <button class="room" data-goto="res-metrics"><span>Métriques</span><b>Toutes les métriques</b><p>calcul, lecture, angle mort</p></button>
+      <button class="room" data-goto="res-neighbors"><span>Métriques</span><b>Plus proches voisins</b><p>128 pixels et paysages</p></button>
+      <button class="room" data-goto="res-howto"><span>Données</span><b>Écarts au guide du formateur</b><p>suivi ou non, et pourquoi</p></button>
+      <button class="room" data-goto="res-data"><span>Données</span><b>Effectifs et augmentation</b><p>du catalogue au jeu de test</p></button>
+      <button class="room" data-goto="res-diffaug"><span>Données</span><b>DiffAugment en images</b><p>les trois transformations</p></button>
+      <button class="room" data-goto="res-crop"><span>Données</span><b>Recadrage : stratégies</b><p>étirer, bandes, carré, format du genre</p></button>
+      <button class="room" data-goto="res-why"><span>Questions</span><b>Pourquoi ces choix techniques&nbsp;?</b><p>norm. spectrale, β₁, mises à jour de D</p></button>
+      <button class="room" data-goto="res-questions"><span>Questions</span><b>Autres questions probables</b><p>essai n°3, WGAN-GP, droits, reproductibilité</p></button>
+      <button class="room" data-goto="res-choices"><span>Questions</span><b>Choix stratégiques</b><p>alternative écartée, raison, preuve</p></button>
+      <button class="room" data-goto="res-optuna-space"><span>Optuna</span><b>L'espace de recherche</b><p>valeurs explorées, valeur retenue</p></button>
+      <button class="room" data-goto="res-optuna"><span>Optuna</span><b>Effet de chaque réglage</b><p>objectif par valeur testée</p></button>
+      <button class="room" data-goto="res-compute"><span>Organisation</span><b>Matériel, durées, reproductibilité</b><p>temps de calcul de chaque étape</p></button>
+      <button class="room" data-goto="res-eda-numbers"><span>Catalogue</span><b>Tous les chiffres</b><p>volume, qualité, biais, formats</p></button>
+      <button class="room" data-goto="res-eda"><span>Catalogue</span><b>Genres et liens entre variables</b><p>par siècle, V de Cramér</p></button>
+      <button class="room" data-goto="res-color"><span>Images</span><b>Couleurs et images moyennes</b><p>par siècle, par genre</p></button>
     </div>
   </section>
 
@@ -926,6 +1205,50 @@
     </div>
   </section>
 
+  <section class="slide" id="res-veille-1" data-room="reserves" data-title="Veille : questions 1 à 8">
+    <h2>La veille : questions 1 à 8</h2>
+    <div class="cartel dense fill">
+      <table>
+        <thead><tr><th>Q</th><th>Sujet</th><th>Le point à énoncer</th><th>Dans le projet</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Problématique visée</td><td>Modélisation générative non supervisée. Efficace aussi en traduction d'image, super-résolution, semi-supervisé ; faible sur le texte.</td><td>génération d'images</td></tr>
+          <tr><td>2</td><td>Fonctionnement</td><td>Jeu minimax entre G et D. À l'optimum, D* = p<sub>data</sub> / (p<sub>data</sub> + p<sub>g</sub>).</td><td>la boucle de <code>src/train.py</code></td></tr>
+          <tr><td>3</td><td>Rôles ; discriminant ou génératif</td><td>G : bruit → image. D : classifieur qui sert de fonction de perte apprise. Discriminant = P(y|x), génératif = P(x).</td><td>le Faussaire et le Conservateur</td></tr>
+          <tr><td>4</td><td>Entrées</td><td>G reçoit z ~ N(0, I), de dimension 100. D reçoit des images réelles (cible 1) et générées (cible 0), au même format.</td><td>images dans [−1, 1]</td></tr>
+          <tr><td>5</td><td>Densité implicite</td><td>On peut tirer un échantillon, pas calculer p(x).</td><td>d'où le FID plutôt qu'une vraisemblance</td></tr>
+          <tr><td>6</td><td>Rétropropagation</td><td>Deux mises à jour alternées. Le gradient de G traverse D sans modifier les poids de D.</td><td>2 mises à jour de D pour 1 de G</td></tr>
+          <tr><td>7</td><td>Évaluation</td><td>FID, Inception Score, précision et rappel, évaluation humaine, interpolations, plus proches voisins.</td><td>salle 4 ; l'IS est inadapté ici</td></tr>
+          <tr><td>8</td><td>Quantité de données</td><td>De quelques milliers à quelques dizaines de milliers d'images ; moins avec une augmentation adaptée.</td><td>3 448 images, avec DiffAugment</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="slide" id="res-veille-2" data-room="reserves" data-title="Veille : questions 9 à 15">
+    <h2>La veille : questions 9 à 15</h2>
+    <div class="cartel dense fill">
+      <table>
+        <thead><tr><th>Q</th><th>Sujet</th><th>Le point à énoncer</th><th>Dans le projet</th></tr></thead>
+        <tbody>
+          <tr><td>9</td><td>Convergence</td><td>Équilibre de Nash quand D répond 0,5 partout. D trop fort : gradient inutilisable. G qui se répète : mode collapse.</td><td>essais n°1 à 3, puis modèle final (0,52 / 0,49)</td></tr>
+          <tr><td>10</td><td>Avantages et inconvénients</td><td>Images nettes, pas d'étiquettes, génération rapide. Instabilité, mode collapse, évaluation difficile.</td><td>observés tous les trois</td></tr>
+          <tr><td>11</td><td>Variantes</td><td>cGAN, DCGAN, CycleGAN, StyleGAN, WGAN, avec une application chacune.</td><td>DCGAN retenu</td></tr>
+          <tr><td>12</td><td>CNN, GAN, DCGAN</td><td>Un CNN est une architecture, un GAN un cadre d'entraînement. DCGAN = convolutions, BatchNorm, pas de pooling, ReLU et LeakyReLU.</td><td>l'architecture de <code>src/models.py</code></td></tr>
+          <tr><td>13</td><td>Chatbot populaire</td><td>ChatGPT : modèles GPT, famille des Transformers autorégressifs, OpenAI. Densité explicite.</td><td>à l'opposé du GAN</td></tr>
+          <tr><td>14</td><td>Dangers</td><td>Deepfakes, fraude, droit d'auteur, biais, mémorisation, coût énergétique.</td><td>test de mémorisation réalisé</td></tr>
+          <tr><td>15</td><td>Intérêt de générer</td><td>Données synthétiques, cas rares, vie privée ; savoir générer suppose d'avoir capté la structure des données.</td><td>—</td></tr>
+        </tbody>
+      </table>
+      <p class="small">Trois points où mes mesures nuancent la veille : l'Inception Score échoue sur de la peinture, le FID dépend du nombre d'images, le KID repère mal le mode collapse.</p>
+    </div>
+  </section>
+
+  <section class="slide" id="res-final-images" data-room="reserves" data-title="Modèle final : généré contre réel">
+    <h2>Modèle final 64×80 : images générées et images réelles</h2>
+    <div class="figure fill" data-fig="confirm_03_final_vs_real" data-alt="Images générées par le modèle final et vraies peintures"></div>
+    <div class="figure fill" data-fig="confirm_05_interpolation" data-alt="Interpolations dans l'espace latent du modèle final" style="flex:1.6"></div>
+  </section>
+
   <section class="slide" id="res-params" data-room="reserves" data-title="Paramètres du modèle final">
     <h2>Paramètres du modèle final (portraits 64×80)</h2>
     <div class="cartel dense fill">
@@ -960,7 +1283,7 @@
         <tbody>
           <tr><td>Portraits 64×80</td><td class="n">3 448</td><td>5×4 → 80×64</td><td class="n">3,8 M</td><td class="n">600</td><td class="n">54,5</td><td class="n">—</td><td class="n">0,62</td><td class="n">0,28</td><td class="n">0,0&nbsp;%</td></tr>
           <tr><td>Portraits 128×160</td><td class="n">3 448</td><td>5×4 → 160×128</td><td class="n">13,2 M</td><td class="n">525</td><td class="n">71,1</td><td class="n">41,1</td><td class="n">0,66</td><td class="n">0,10</td><td class="n">0,0&nbsp;%</td></tr>
-          <tr><td>Paysages 64×48</td><td class="n">2 714</td><td>3×4 → 48×64</td><td class="n">3,4 M</td><td class="n">600</td><td class="n">42,3</td><td class="n">—</td><td class="n">0,86</td><td class="n">0,20</td><td class="n">0,2&nbsp;%</td></tr>
+          <tr><td>Paysages 64×48</td><td class="n">2 714</td><td>3×4 → 48×64</td><td class="n">3,4 M</td><td class="n">600</td><td class="n">42,3</td><td class="n">—</td><td class="n">0,86</td><td class="n">0,20</td><td class="n">0,1&nbsp;%</td></tr>
           <tr><td>Paysages 128×96</td><td class="n">2 714</td><td>3×4 → 96×128</td><td class="n">12,4 M</td><td class="n">600</td><td class="n">61,9</td><td class="n">37,7</td><td class="n">0,87</td><td class="n">0,07</td><td class="n">0,0&nbsp;%</td></tr>
         </tbody>
       </table>
@@ -1062,6 +1385,42 @@
     </div>
   </section>
 
+  <section class="slide" id="res-diffaug" data-room="reserves" data-title="DiffAugment en images">
+    <h2>DiffAugment en images</h2>
+    <div class="row fill">
+      <div class="figure fill" data-fig="diffaugment_examples" data-alt="Exemples des transformations de DiffAugment"></div>
+      <div class="cartel w45">
+        <p class="eyebrow">Trois familles de transformations</p>
+        <ul>
+          <li><strong>Couleur</strong> : luminosité, saturation et contraste aléatoires.</li>
+          <li><strong>Translation</strong> : décalage jusqu'à 1/8 de la taille de l'image.</li>
+          <li><strong>Cutout</strong> : un rectangle de l'image mis à zéro.</li>
+        </ul>
+        <p>Elles sont appliquées aux vraies <em>et</em> aux fausses images, à chaque passage devant le discriminateur, y compris pendant la mise à jour du générateur. Elles sont différentiables : le gradient les traverse.</p>
+        <p class="small">Effet mesuré : FID 130 avec le miroir seul (essai n°1), 116 avec DiffAugment (essai n°2). Optuna a retenu couleur + translation, sans le cutout.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" id="res-crop" data-room="reserves" data-title="Recadrage : stratégies comparées">
+    <h2>Recadrage : les stratégies comparées</h2>
+    <div class="row fill">
+      <div class="figure fill" data-fig="img_19_resize_strategies" data-alt="Étirer, ajouter des bandes ou recadrer au carré"></div>
+      <div class="col grow">
+        <div class="figure fill" data-fig="ds_02_aspect_selection" data-alt="Sélection des images selon leur format"></div>
+        <div class="cartel">
+          <p class="eyebrow">Ce que chaque méthode coûte</p>
+          <ul>
+            <li><strong>Étirer</strong> déforme les visages.</li>
+            <li><strong>Ajouter des bandes</strong> apprend au modèle à peindre des bandes.</li>
+            <li><strong>Recadrer au carré</strong> coupe 25&nbsp;% de la surface.</li>
+          </ul>
+          <p><strong>Choix</strong> : un format par genre, et les seules images qui perdent moins de 25&nbsp;% de leur surface à ce format.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section class="slide" id="res-why" data-room="reserves" data-title="Pourquoi ces choix techniques ?">
     <h2>Pourquoi ces choix techniques&nbsp;?</h2>
     <div class="row">
@@ -1077,6 +1436,24 @@
     <div class="row">
       <div class="cartel grow tight"><p class="eyebrow">Les hyperparamètres sont-ils sur-ajustés aux portraits&nbsp;?</p><p>Repris tels quels sur les paysages, ils font passer le FID de 79,8 à 42,3.</p></div>
       <div class="cartel grow tight"><p class="eyebrow">Les paysages sont-ils «&nbsp;meilleurs&nbsp;» que les portraits&nbsp;?</p><p>Le FID ne permet pas de le dire : le flou léger vaut 93 pour les paysages et 61 pour les portraits.</p></div>
+    </div>
+  </section>
+
+  <section class="slide" id="res-questions" data-room="reserves" data-title="Autres questions probables">
+    <h2>Autres questions probables</h2>
+    <div class="row">
+      <div class="cartel grow tight"><p class="eyebrow">Pourquoi l'essai n°3 a-t-il échoué&nbsp;?</p><p>Bonne technique, mauvais dosage. Dans l'étude Optuna, la même configuration obtient 235 avec les réglages du DCGAN, et 87 avec 3 mises à jour de D, un lot de 64 et β₁ = 0.</p></div>
+      <div class="cartel grow tight"><p class="eyebrow">Les 52&nbsp;% de la taille de lot sont-ils réels&nbsp;?</p><p>En partie. Le budget est fixé en époques : un lot de 64 fait deux fois plus de mises à jour qu'un lot de 128. Et seuls 4 essais sur 30 utilisaient 128.</p></div>
+      <div class="cartel grow tight"><p class="eyebrow">Pourquoi pas WGAN-GP ou StyleGAN&nbsp;?</p><p>Non testés. J'ai privilégié un modèle explicable ; la stabilité est venue de la normalisation spectrale et d'Optuna. C'est une piste, pas un choix démontré.</p></div>
+    </div>
+    <div class="row">
+      <div class="cartel grow tight"><p class="eyebrow">Le modèle 128×160 a un FID de 71 : moins bon que 54,5&nbsp;?</p><p>Non : l'échelle change avec la résolution. En 128×160, le bruit vaut 71 et le flou léger 21, contre 114 et 61 en 64×80. Réduites en 64×80, ses images obtiennent 41,1.</p></div>
+      <div class="cartel grow tight"><p class="eyebrow">Peut-on demander une image précise&nbsp;?</p><p>L'application génère en direct ; on choisit le genre et la résolution. Pas de description : le modèle n'est pas conditionné. Un cGAN permettrait de choisir une catégorie.</p></div>
+      <div class="cartel grow tight"><p class="eyebrow">Pourquoi un modèle par genre&nbsp;?</p><p>Les genres ont des structures et des formats différents. Un modèle unique devrait apprendre plusieurs distributions dans un seul format.</p></div>
+    </div>
+    <div class="row">
+      <div class="cartel grow tight"><p class="eyebrow">Les résultats sont-ils reproductibles&nbsp;?</p><p>Graines fixées, configuration enregistrée avec chaque modèle, code et scores publiés. Mais le GPU n'est pas déterministe : un réentraînement ne redonne pas exactement les mêmes chiffres.</p></div>
+      <div class="cartel grow tight"><p class="eyebrow">Avez-vous le droit d'utiliser ces images&nbsp;?</p><p>Elles viennent de la Web Gallery of Art et servent à un projet pédagogique. Le jeu d'images n'est pas redistribué : le dépôt contient les liens et le code pour le reconstruire.</p></div>
     </div>
   </section>
 
@@ -1103,15 +1480,105 @@
     </div>
   </section>
 
+  <section class="slide" id="res-optuna-space" data-room="reserves" data-title="Optuna : l'espace de recherche">
+    <h2>Optuna : l'espace de recherche</h2>
+    <div class="row fill">
+      <div class="cartel dense grow">
+        <table>
+          <thead><tr><th>Réglage</th><th>Valeurs explorées</th><th>Valeur retenue</th></tr></thead>
+          <tbody>
+            <tr><td>Perte</td><td>BCE, hinge</td><td>BCE</td></tr>
+            <tr><td>Normalisation spectrale de D</td><td>avec, sans</td><td>avec</td></tr>
+            <tr><td>Vitesse d'apprentissage de G</td><td>de 5·10⁻⁵ à 5·10⁻⁴ (échelle logarithmique)</td><td>3,0·10⁻⁴</td></tr>
+            <tr><td>Vitesse d'apprentissage de D</td><td>de 5·10⁻⁵ à 10⁻³ (échelle logarithmique)</td><td>5,0·10⁻⁴</td></tr>
+            <tr><td>Adam β₁</td><td>0 ; 0,5</td><td>0</td></tr>
+            <tr><td>Adam β₂</td><td>0,9 ; 0,999</td><td>0,999</td></tr>
+            <tr><td>Mises à jour de D par itération</td><td>1, 2, 3</td><td>2</td></tr>
+            <tr><td>DiffAugment</td><td>aucune ; translation + cutout ; couleur + translation ; les trois</td><td>couleur + translation</td></tr>
+            <tr><td>Taille de lot</td><td>64, 128</td><td>64</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="cartel w35">
+        <p class="eyebrow">Le déroulement</p>
+        <ul>
+          <li>Algorithme TPE ; les 8 premiers essais explorent au hasard.</li>
+          <li>30 essais de 300 époques, une évaluation toutes les 25 époques.</li>
+          <li>Arrêt anticipé : après l'époque 125, un essai situé dans le plus mauvais quart est interrompu. 6 essais arrêtés, 24 menés à terme.</li>
+          <li>Objectif : moyenne du FID des 3 dernières évaluations.</li>
+        </ul>
+        <p class="small">Les essais 0 et 1 rejouent mes essais manuels n°2 et n°3 : 215 et 235. Meilleur essai : n°26, à 68,0.</p>
+      </div>
+    </div>
+  </section>
+
   <section class="slide" id="res-optuna" data-room="reserves" data-title="Optuna : effet de chaque réglage">
     <h2>Optuna : effet de chaque réglage</h2>
     <div class="figure fill" data-fig="optuna_03_effects" data-alt="Objectif des essais selon la valeur de chaque hyperparamètre"></div>
+  </section>
+
+  <section class="slide" id="res-compute" data-room="reserves" data-title="Matériel, durées, reproductibilité">
+    <h2>Matériel, durées, reproductibilité</h2>
+    <div class="row fill">
+      <div class="cartel grow">
+        <p class="eyebrow">Temps de calcul</p>
+        <table>
+          <thead><tr><th>Étape</th><th class="n">Durée</th></tr></thead>
+          <tbody>
+            <tr><td>Téléchargement des 32 437 images</td><td class="n">environ 50 min</td></tr>
+            <tr><td>Un entraînement en 64×80 (500 à 600 époques)</td><td class="n">25 à 45 min</td></tr>
+            <tr><td>Étude Optuna : 30 essais de 300 époques</td><td class="n">7 h 30</td></tr>
+            <tr><td>Confirmation : 6 entraînements de 600 époques</td><td class="n">environ 4 h</td></tr>
+            <tr><td>Portraits 128×160 : largeur 64 / largeur 32</td><td class="n">2 h 32 / 1 h 10</td></tr>
+            <tr><td>Paysages : 64×48 / 128×96</td><td class="n">28 min / 2 h 37</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="col w40">
+        <div class="cartel">
+          <p class="eyebrow">Matériel</p>
+          <p>Un ordinateur portable, carte graphique RTX 5060 (8 Go). Python 3.12, PyTorch 2.11.</p>
+          <p class="small">Les 3 448 images en 64×80 pèsent 53 Mo : elles sont chargées une fois en mémoire graphique.</p>
+        </div>
+        <div class="cartel">
+          <p class="eyebrow">Reproductibilité</p>
+          <ul>
+            <li>Graines fixées ; configuration, courbes et scores enregistrés pour chaque entraînement.</li>
+            <li>Entraînements interruptibles, repris par la même commande.</li>
+          </ul>
+          <p class="small">Limite : le calcul sur GPU n'est pas déterministe, et la boucle d'entraînement a évolué après les trois premiers essais.</p>
+        </div>
+      </div>
+    </div>
   </section>
 
   <section class="slide" id="res-neighbors" data-room="reserves" data-title="Plus proches voisins : 128 pixels et paysages">
     <h2>Plus proches voisins : 128 pixels et paysages</h2>
     <div class="figure fill" data-fig="p128_04_nearest_neighbors" data-alt="Portraits générés en 128 pixels et leur plus proche voisine d'entraînement"></div>
     <div class="figure fill" data-fig="landscape_06_nearest_neighbors" data-alt="Paysages générés et leur plus proche voisin d'entraînement"></div>
+  </section>
+
+  <section class="slide" id="res-eda-numbers" data-room="reserves" data-title="Catalogue : tous les chiffres">
+    <h2>Catalogue : tous les chiffres de l'analyse</h2>
+    <div class="cartel dense fill">
+      <table>
+        <thead><tr><th>Thème</th><th>Chiffres</th></tr></thead>
+        <tbody>
+          <tr><td>Volume</td><td>52 867 œuvres, 11 colonnes ; 32 438 peintures (61&nbsp;%) ; 3 663 peintres ; 26 écoles ; 10 genres</td></tr>
+          <tr><td>Qualité</td><td>aucune valeur manquante au sens strict ; 4 800 dates notées «&nbsp;-&nbsp;» (9&nbsp;%) ; 47&nbsp;% des techniques sans dimensions ; dates en types mélangés</td></tr>
+          <tr><td>Erreurs de saisie</td><td>dates <code>162628</code> et <code>162123</code> (tiret perdu) ; un décès en <code>19801</code> ; 154 «&nbsp;peintures&nbsp;» en marbre, bronze ou photo</td></tr>
+          <tr><td>Genres</td><td>religieux 42&nbsp;%, portrait 15&nbsp;%, paysage 13&nbsp;%</td></tr>
+          <tr><td>Écoles</td><td>italienne 42&nbsp;% ; les 3 premières 69&nbsp;% ; les 5 premières 87&nbsp;%</td></tr>
+          <tr><td>Époques</td><td>65&nbsp;% des XVᵉ-XVIIᵉ siècles ; rien après 1900 ; la tranche de 50 ans du catalogue décrit l'artiste, pas l'œuvre</td></tr>
+          <tr><td>Techniques</td><td>huile 70&nbsp;%, fresque 14&nbsp;%, tempera 9&nbsp;% ; toile 48&nbsp;%, bois 34&nbsp;%</td></tr>
+          <tr><td>Formats</td><td>55&nbsp;% verticaux, 41&nbsp;% horizontaux, 4&nbsp;% carrés ; deux pics de ratio à 0,8 et 1,3 ; recadrage carré : 24&nbsp;% de surface perdue en médiane</td></tr>
+          <tr><td>Doublons</td><td>16&nbsp;% de détails ; 18&nbsp;% de quasi-doublons ; 35&nbsp;% parmi les fresques</td></tr>
+          <tr><td>Artistes</td><td>indice de Gini 0,70 ; 1&nbsp;% des peintres signent 24&nbsp;% des peintures ; 26&nbsp;% n'ont qu'une œuvre</td></tr>
+          <tr><td>Liens entre variables</td><td>V de Cramér : technique et support 0,60, genre et orientation 0,36 ; école × genre et format selon le genre : liens significatifs</td></tr>
+        </tbody>
+      </table>
+      <p class="small">Le message : un GAN apprend ce que contient le corpus, donc ici «&nbsp;la peinture religieuse européenne de la Renaissance&nbsp;». D'où un modèle par genre.</p>
+    </div>
   </section>
 
   <section class="slide" id="res-eda" data-room="reserves" data-title="Catalogue : compléments">
@@ -1133,10 +1600,21 @@
   <div id="help">→ avancer · <kbd>M</kbd> plan · <kbd>R</kbd> réserves · <kbd>F</kbd> plein écran · <kbd>T</kbd> chrono</div>
   <div id="timer" hidden></div>
   <div id="overview" role="dialog" aria-label="Plan de la présentation"><h2>Plan de la visite</h2><div class="ov-body"></div></div>
+  <div id="chooser" role="dialog" aria-label="Choix de la version">
+    <p class="eyebrow">GANisme · le portrait disparu</p>
+    <h2>Quelle visite aujourd'hui&nbsp;?</h2>
+    <div class="tickets">
+      <button type="button" data-duree="15"><span>Visite courte</span><b>15 minutes</b><em></em>
+        <p>L'essentiel de chaque salle. Les autres écrans restent disponibles dans les réserves.</p><kbd>1</kbd></button>
+      <button type="button" data-duree="30"><span>Visite complète</span><b>30 minutes</b><em></em>
+        <p>Toutes les salles en détail : veille, catalogue, métriques, modèles, démonstration.</p><kbd>3</kbd></button>
+    </div>
+    <p class="wall-note">Cliquez, ou appuyez sur <kbd>1</kbd> ou <kbd>3</kbd>. On peut revenir à ce choix depuis l'écran de titre.</p>
+  </div>
 </main>
 </div>
-<script src="js/data.js?v=5"></script>
-<script src="js/engine.js?v=5"></script>
-<script src="js/widgets.js?v=5"></script>
+<script src="js/data.js?v=10"></script>
+<script src="js/engine.js?v=10"></script>
+<script src="js/widgets.js?v=10"></script>
 </body>
 </html>
