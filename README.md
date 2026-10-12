@@ -126,6 +126,7 @@ repository: entry point `app.py`, and the root `requirements.txt`, which only li
 | `reports/metrics/`, `reports/optuna/` | result tables |
 | `docs/reponse-question.md` | literature review (in French) |
 | `docs/conclusion.md` | conclusion: results, difficulties, limits, next steps (in French) |
+| `presentation/` | interactive presentation of the project (in French): open `presentation/index.html` in a browser; `build_assets.py` regenerates its images and data |
 | `data/` | not versioned, see [`data/README.md`](data/README.md) |
 
 ## Reproducing the work
